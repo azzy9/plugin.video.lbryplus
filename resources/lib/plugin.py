@@ -15,6 +15,10 @@ from urllib.parse import quote,unquote,quote_plus,unquote_plus
 from resources.lib.local import *
 from resources.lib.exception import *
 
+from resources.lib.odysee import *
+
+odysee = odysee()
+
 ADDON = xbmcaddon.Addon()
 tr = ADDON.getLocalizedString
 lbry_api_url = unquote(ADDON.getSetting('lbry_api_url'))
@@ -41,6 +45,8 @@ def call_rpc(method, params={}, errdialog=True):
     try:
         xbmc.log('call_rpc: url=' + lbry_api_url + ', method=' + method + ', params=' + str(params))
         headers = {'content-type' : 'application/json'}
+        if odysee.has_login_details() and odysee.signed_in:
+            headers.update({'x-lbry-auth-token': odysee.auth_token}) 
         json = { 'jsonrpc' : '2.0', 'id' : 1, 'method': method, 'params': params }
         result = requests.post(lbry_api_url, headers=headers, json=json)
         result.raise_for_status()
@@ -736,6 +742,11 @@ def lbry_root():
     addDirectoryItem(ph, plugin.url_for(plugin_playlist, name=quote_plus(tr(30211))), ListItem(tr(30211)), True)
     #addDirectoryItem(ph, plugin.url_for(lbry_new, page=1), ListItem(tr(30202)), True)
     addDirectoryItem(ph, plugin.url_for(lbry_search), ListItem(tr(30201)), True)
+    if odysee.has_login_details() and odysee.signed_in:
+        wallet_balance = call_rpc('wallet_balance', {})
+        if wallet_balance:
+            addDirectoryItem(ph, '', ListItem('Wallet: ' + wallet_balance[ 'available' ]), True)
+
     endOfDirectory(ph)
 
 #@plugin.route('/playlists')
@@ -775,7 +786,14 @@ def plugin_playlist_del(name,uri):
 
 @plugin.route('/follows')
 def plugin_follows():
-    channels = load_channel_subs()
+    if odysee.has_login_details() and odysee.signed_in:
+        subscriptions = call_rpc('preference_get', {})[ 'shared' ][ 'value' ][ 'subscriptions' ]
+        channels = []
+        for uri in subscriptions:
+            uri = uri.replace('lbry://', '');
+            channels.append((uri.split('#')[0],uri.split('#')[1]))
+    else:
+        channels = load_channel_subs()
     resolve_uris = []
     for (name,claim_id) in channels:
         resolve_uris.append(name+'#'+claim_id)
@@ -967,6 +985,15 @@ def claim_download(uri):
     call_rpc('get', {'uri': uri, 'save_file': True})
 
 def run():
+
+    if odysee.has_login_details() and not odysee.auth_token:
+        odysee.user_new()
+    
+    if odysee.has_login_details() and odysee.auth_token and not odysee.signed_in:
+        if odysee.user_signin():
+            odysee.signed_in = 'True'
+            ADDON.setSetting( 'signed_in', odysee.signed_in )
+
     try:
         plugin.run()
     except PluginException as e:

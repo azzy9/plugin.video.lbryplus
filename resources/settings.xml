@@ -12,4 +12,8 @@
     <setting type="lsep" label="30003"/>
     <setting id="server_filter_disable" type="bool" label="30004" default="false"/>
   </category>
+  <category label="Odysee">
+    <setting id="email" label="Email" type="text" default=""/>
+    <setting id="password" label="Password" type="text" option="hidden" default=""/>
+  </category>
 </settings>
