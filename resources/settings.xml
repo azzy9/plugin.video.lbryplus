@@ -13,7 +13,11 @@
     <setting id="server_filter_disable" type="bool" label="30004" default="false"/>
   </category>
   <category label="Odysee">
+    <setting id="odysee_enable" type="bool" label="Enable" default="false"/>
     <setting id="email" label="Email" type="text" default=""/>
     <setting id="password" label="Password" type="text" option="hidden" default=""/>
+  </category>
+  <category label="Debug">
+     <setting id="useHTTP" label="Use HTTP" type="bool" default="false"/>
   </category>
 </settings>

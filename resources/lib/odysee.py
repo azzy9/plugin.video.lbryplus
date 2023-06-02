@@ -1,4 +1,7 @@
-""" Main Odysee integration class """
+"""
+Main Odysee integration class
+Created by Azzy9
+"""
 
 import email
 import xbmc, xbmcaddon

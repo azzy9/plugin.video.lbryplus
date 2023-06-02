@@ -10,23 +10,20 @@ import routing
 import requests
 import time
 
-from urllib.parse import quote,unquote,quote_plus,unquote_plus
+from urllib.parse import quote, unquote, quote_plus, unquote_plus
 
-from resources.lib.local import *
 from resources.lib.exception import *
-
-from resources.lib.odysee import *
-
-odysee = odysee()
 
 ADDON = xbmcaddon.Addon()
 tr = ADDON.getLocalizedString
-lbry_api_url = unquote(ADDON.getSetting('lbry_api_url'))
-if lbry_api_url == '':
-    raise Exception('Lbry API URL is undefined.')
-using_lbry_proxy = lbry_api_url.find('api.lbry.tv') != -1
 
 odysee_comment_api_url = 'https://comments.odysee.com/api/v2'
+
+if ADDON.getSetting( 'odysee_enable' ) == 'true':
+    from resources.lib.external import *
+else:
+    from resources.lib.local import *
+from resources.lib.general import *
 
 # assure profile directory exists
 profile_path = ADDON.getAddonInfo('profile')
@@ -40,35 +37,6 @@ plugin = routing.Plugin()
 ph = plugin.handle
 setContent(ph, 'videos')
 dialog = Dialog()
-
-def call_rpc(method, params={}, errdialog=True):
-    try:
-        xbmc.log('call_rpc: url=' + lbry_api_url + ', method=' + method + ', params=' + str(params))
-        headers = {'content-type' : 'application/json'}
-        if odysee.has_login_details() and odysee.signed_in:
-            headers.update({'x-lbry-auth-token': odysee.auth_token}) 
-        json = { 'jsonrpc' : '2.0', 'id' : 1, 'method': method, 'params': params }
-        result = requests.post(lbry_api_url, headers=headers, json=json)
-        result.raise_for_status()
-        rjson = result.json()
-        if 'error' in rjson:
-            raise PluginException(rjson['error']['message'])
-        return result.json()['result']
-    except requests.exceptions.ConnectionError as e:
-        if errdialog:
-            dialog.notification(tr(30105), tr(30106), NOTIFICATION_ERROR)
-        raise PluginException(e)
-    except requests.exceptions.HTTPError as e:
-        if errdialog:
-            dialog.notification(tr(30101), str(e), NOTIFICATION_ERROR)
-        raise PluginException(e)
-    except PluginException as e:
-        if errdialog:
-            dialog.notification(tr(30102), str(e), NOTIFICATION_ERROR)
-        raise e
-    except Exception as e:
-        xbmc.log('call_rpc exception:' + str(e))
-        raise e
 
 def call_comment_rpc(method, params={}, errdialog=True):
     try:
@@ -742,11 +710,6 @@ def lbry_root():
     addDirectoryItem(ph, plugin.url_for(plugin_playlist, name=quote_plus(tr(30211))), ListItem(tr(30211)), True)
     #addDirectoryItem(ph, plugin.url_for(lbry_new, page=1), ListItem(tr(30202)), True)
     addDirectoryItem(ph, plugin.url_for(lbry_search), ListItem(tr(30201)), True)
-    if odysee.has_login_details() and odysee.signed_in:
-        wallet_balance = call_rpc('wallet_balance', {})
-        if wallet_balance:
-            addDirectoryItem(ph, '', ListItem('Wallet: ' + wallet_balance[ 'available' ]), True)
-
     endOfDirectory(ph)
 
 #@plugin.route('/playlists')
@@ -786,14 +749,7 @@ def plugin_playlist_del(name,uri):
 
 @plugin.route('/follows')
 def plugin_follows():
-    if odysee.has_login_details() and odysee.signed_in:
-        subscriptions = call_rpc('preference_get', {})[ 'shared' ][ 'value' ][ 'subscriptions' ]
-        channels = []
-        for uri in subscriptions:
-            uri = uri.replace('lbry://', '');
-            channels.append((uri.split('#')[0],uri.split('#')[1]))
-    else:
-        channels = load_channel_subs()
+    channels = load_channel_subs()
     resolve_uris = []
     for (name,claim_id) in channels:
         resolve_uris.append(name+'#'+claim_id)
@@ -961,6 +917,10 @@ def claim_play(uri):
     result = call_rpc('get', {'uri': uri, 'save_file': False})
     stream_url = result['streaming_url'].replace('0.0.0.0','127.0.0.1')
 
+    # Use HTTP
+    if ADDON.getSetting('useHTTP') == 'true':
+        stream_url = stream_url.replace('https://', 'http://', 1)
+
     (url,li) = result_to_itemlist([claim_info])[0]
     li.setPath(stream_url)
     setResolvedUrl(ph, True, li)
@@ -985,15 +945,6 @@ def claim_download(uri):
     call_rpc('get', {'uri': uri, 'save_file': True})
 
 def run():
-
-    if odysee.has_login_details() and not odysee.auth_token:
-        odysee.user_new()
-    
-    if odysee.has_login_details() and odysee.auth_token and not odysee.signed_in:
-        if odysee.user_signin():
-            odysee.signed_in = 'True'
-            ADDON.setSetting( 'signed_in', odysee.signed_in )
-
     try:
         plugin.run()
     except PluginException as e:
