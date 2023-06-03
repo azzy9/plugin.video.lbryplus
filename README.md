@@ -7,7 +7,7 @@ This is a basic plugin for accessing [LBRY](https://lbry.com) content (video's o
 This plugin can also get your followed channels and recent videos from Odysee by signing into your Odysee account.
 This can be done in the Odysee section within the options of the plugin.
 
-By default you don't need to install any extra software to start using this LBRY plugin, the plugin uses the API server provided by lbry.tv (https://api.lbry.tv/api/v1/proxy).
+By default you don't need to install any extra software to start using this LBRY plugin, the plugin uses the API server provided by odysee.com (https://api.na-backend.odysee.com/api/v1/proxy).
 
 Alternatively, you can run your own API server and contribute to the LBRY network by hosting content data of videos you watched. This enables the 'Download' feature in the plugin, so you can watch videos uninterrupted or save the video to a local file. Also this enables wallet features like watching paid videos or tipping authors.
 
