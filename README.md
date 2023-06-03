@@ -4,7 +4,8 @@ This plugin is a fork from https://github.com/accumulator/plugin.video.lbry by a
 
 This is a basic plugin for accessing [LBRY](https://lbry.com) content (video's only, for now).
 
-This plugin can also get followed channels and recent videos from them by signin into your Odysee account in the Odysee section in the options.
+This plugin can also get your followed channels and recent videos from Odysee by signing into your Odysee account.
+This can be done in the Odysee section within the options of the plugin.
 
 By default you don't need to install any extra software to start using this LBRY plugin, the plugin uses the API server provided by lbry.tv (https://api.lbry.tv/api/v1/proxy).
 
