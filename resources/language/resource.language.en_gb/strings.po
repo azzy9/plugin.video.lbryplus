@@ -38,6 +38,30 @@ msgctxt "#30005"
 msgid "Options"
 msgstr ""
 
+msgctxt "#30006"
+msgid "Odysee"
+msgstr ""
+
+msgctxt "#30007"
+msgid "Enable"
+msgstr ""
+
+msgctxt "#30008"
+msgid "Email"
+msgstr ""
+
+msgctxt "#30009"
+msgid "Password"
+msgstr ""
+
+msgctxt "#30010"
+msgid "Debug"
+msgstr ""
+
+msgctxt "#30011"
+msgid "Use HTTP"
+msgstr ""
+
 # errors 301xx
 msgctxt "#30100"
 msgid "Error"

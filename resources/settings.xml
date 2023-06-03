@@ -12,12 +12,12 @@
     <setting type="lsep" label="30003"/>
     <setting id="server_filter_disable" type="bool" label="30004" default="false"/>
   </category>
-  <category label="Odysee">
-    <setting id="odysee_enable" type="bool" label="Enable" default="false"/>
-    <setting id="email" label="Email" type="text" default=""/>
-    <setting id="password" label="Password" type="text" option="hidden" default=""/>
+  <category label="30006">
+    <setting id="odysee_enable" type="bool" label="30007" default="false"/>
+    <setting id="email" label="30008" type="text" default=""/>
+    <setting id="password" label="30009" type="text" option="hidden" default=""/>
   </category>
-  <category label="Debug">
-     <setting id="useHTTP" label="Use HTTP" type="bool" default="false"/>
+  <category label="30010">
+     <setting id="useHTTP" label="30011" type="bool" default="false"/>
   </category>
 </settings>
