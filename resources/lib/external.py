@@ -10,22 +10,34 @@ from resources.lib.odysee import *
 from resources.lib.general import *
 
 ADDON = xbmcaddon.Addon()
-tr = ADDON.getLocalizedString
 
 odysee = odysee()
 
 def get_profile_path(rpath):
+
+    """ Gets Profile Path """
+
     return xbmcvfs.translatePath(ADDON.getAddonInfo('profile') + rpath)
 
 def get_additional_header():
+
+    """ Gets header with token if user is signed in """
+
     if odysee.has_login_details() and odysee.signed_in:
         return {'x-lbry-auth-token': odysee.auth_token}
     return {}
 
 def load_channel_subs():
+
+    """ Gets Followed channels from Odysee """
+
     channels = []
     if odysee.has_login_details() and odysee.signed_in:
-        subscriptions = call_rpc('preference_get', {}, additional_headers=get_additional_header())[ 'shared' ][ 'value' ][ 'subscriptions' ]
+
+        subscriptions = call_rpc(
+            'preference_get', {}, additional_headers=get_additional_header()
+        )[ 'shared' ][ 'value' ][ 'subscriptions' ]
+
         for uri in subscriptions:
             uri = uri.replace('lbry://', '')
             items = uri.split('#')
@@ -35,6 +47,9 @@ def load_channel_subs():
     return channels
 
 def save_channel_subs(channels):
+
+    """ TODO: Move to Odysee """
+
     try:
         with xbmcvfs.File(get_profile_path('channel_subs'), 'w') as f:
             for (name, claim_id) in channels:
@@ -42,15 +57,15 @@ def save_channel_subs(channels):
                 f.write('#')
                 f.write(bytearray(claim_id.encode('utf-8')))
                 f.write('\n')
-    except Exception as e:
-        xbmcgui.Dialog().notification(tr(30104), str(e), xbmcgui.NOTIFICATION_ERROR)
+    except Exception as err:
+        xbmcgui.Dialog().notification(get_string(30104), str(err), xbmcgui.NOTIFICATION_ERROR)
 
 def load_playlist(name):
     items = []
     try:
         with xbmcvfs.File(get_profile_path(name + '.list'), 'r') as f:
             lines = f.readBytes()
-    except Exception as e:
+    except Exception:
         pass
     lines = lines.decode('utf-8')
     for line in lines.split('\n'):
@@ -64,14 +79,16 @@ def save_playlist(name, items):
             for item in items:
                 f.write(bytearray(item.encode('utf-8')))
                 f.write('\n')
-    except Exception as e:
-        xbmcgui.Dialog().notification(tr(30104), str(e), xbmcgui.NOTIFICATION_ERROR)
+    except Exception as err:
+        xbmcgui.Dialog().notification(get_string(30104), str(err), xbmcgui.NOTIFICATION_ERROR)
 
 def odysee_init():
 
+    """ Initiate Odysee Login """
+
     if odysee.has_login_details() and not odysee.auth_token:
         odysee.user_new()
-    
+
     if odysee.has_login_details() and odysee.auth_token and not odysee.signed_in:
         if odysee.user_signin():
             odysee.signed_in = 'True'

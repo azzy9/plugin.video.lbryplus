@@ -1,13 +1,13 @@
 # -*- coding: utf-8 -*-
 from __future__ import absolute_import
 
-import xbmc
 import xbmcaddon
 import xbmcvfs
 import xbmcgui
 
+from resources.lib.general import *
+
 ADDON = xbmcaddon.Addon()
-tr = ADDON.getLocalizedString
 
 def get_profile_path(rpath):
     return xbmcvfs.translatePath(ADDON.getAddonInfo('profile') + rpath)
@@ -18,7 +18,7 @@ def load_channel_subs():
         f = xbmcvfs.File(get_profile_path('channel_subs'), 'r')
         lines = f.readBytes()
         f.close()
-    except Exception as e:
+    except Exception:
         pass
     lines = lines.decode('utf-8')
     for line in lines.split('\n'):
@@ -36,15 +36,15 @@ def save_channel_subs(channels):
                 f.write('#')
                 f.write(bytearray(claim_id.encode('utf-8')))
                 f.write('\n')
-    except Exception as e:
-        xbmcgui.Dialog().notification(tr(30104), str(e), xbmcgui.NOTIFICATION_ERROR)
+    except Exception as err:
+        xbmcgui.Dialog().notification(get_string(30104), str(err), xbmcgui.NOTIFICATION_ERROR)
 
 def load_playlist(name):
     items = []
     try:
         with xbmcvfs.File(get_profile_path(name + '.list'), 'r') as f:
             lines = f.readBytes()
-    except Exception as e:
+    except Exception:
         pass
     lines = lines.decode('utf-8')
     for line in lines.split('\n'):
@@ -58,5 +58,5 @@ def save_playlist(name, items):
             for item in items:
                 f.write(bytearray(item.encode('utf-8')))
                 f.write('\n')
-    except Exception as e:
-        xbmcgui.Dialog().notification(tr(30104), str(e), xbmcgui.NOTIFICATION_ERROR)
+    except Exception as err:
+        xbmcgui.Dialog().notification(get_string(30104), str(err), xbmcgui.NOTIFICATION_ERROR)

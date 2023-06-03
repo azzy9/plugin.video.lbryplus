@@ -1,6 +1,10 @@
-# Kodi/XBMC plugin for LBRY
+# Kodi/XBMC plugin for LBRY and Odysee
+
+This plugin is a fork from https://github.com/accumulator/plugin.video.lbry by accumulator.
 
 This is a basic plugin for accessing [LBRY](https://lbry.com) content (video's only, for now).
+
+This plugin can also get followed channels and recent videos from them by signin into your Odysee account in the Odysee section in the options.
 
 By default you don't need to install any extra software to start using this LBRY plugin, the plugin uses the API server provided by lbry.tv (https://api.lbry.tv/api/v1/proxy).
 

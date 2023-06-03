@@ -1,5 +1,9 @@
+# -*- coding: utf-8 -*-
+
 import xbmc
 import xbmcaddon
+import xbmcgui
+
 import requests
 
 from urllib.parse import quote,unquote,quote_plus,unquote_plus
@@ -7,44 +11,60 @@ from urllib.parse import quote,unquote,quote_plus,unquote_plus
 from resources.lib.exception import *
 
 ADDON = xbmcaddon.Addon()
+KODI_VERSION = float(xbmcaddon.Addon('xbmc.addon').getAddonInfo('version')[:4])
+
+#language
+__language__ = ADDON.getLocalizedString
 
 lbry_api_url = unquote(ADDON.getSetting('lbry_api_url'))
 if lbry_api_url == '':
     raise Exception('Lbry API URL is undefined.')
 using_lbry_proxy = lbry_api_url.find('api.lbry.tv') != -1
 
+dialog = xbmcgui.Dialog()
 reqs = requests.session()
 
+def get_string( string_id ):
+
+    """ gets language string based upon id """
+
+    if string_id >= 30000:
+        return __language__( string_id )
+    return xbmc.getLocalizedString( string_id )
+
 def call_rpc(method, params={}, errdialog=True, additional_headers = None):
+
+    """ Makes a RPC Call """
+
     try:
         xbmc.log('call_rpc: url=' + lbry_api_url + ', method=' + method + ', params=' + str(params))
         headers = {'content-type' : 'application/json'}
         if additional_headers:
             headers.update( additional_headers )
-        json = { 'jsonrpc' : '2.0', 'id' : 1, 'method': method, 'params': params }
-        result = requests.post(lbry_api_url, headers=headers, json=json)
+        json_data = { 'jsonrpc' : '2.0', 'id' : 1, 'method': method, 'params': params }
+        result = requests.post(lbry_api_url, headers=headers, json=json_data)
         result.raise_for_status()
         rjson = result.json()
         if 'error' in rjson:
             raise PluginException(rjson['error']['message'])
         return result.json()['result']
-    except requests.exceptions.ConnectionError as e:
+    except requests.exceptions.ConnectionError as err:
         if errdialog:
-            dialog.notification(tr(30105), tr(30106), NOTIFICATION_ERROR)
-        raise PluginException(e)
-    except requests.exceptions.HTTPError as e:
+            dialog.notification(get_string(30105), get_string(30106), xbmcgui.NOTIFICATION_ERROR)
+        raise PluginException(err)
+    except requests.exceptions.HTTPError as err:
         if errdialog:
-            dialog.notification(tr(30101), str(e), NOTIFICATION_ERROR)
-        raise PluginException(e)
-    except PluginException as e:
+            dialog.notification(get_string(30101), str(err), xbmcgui.NOTIFICATION_ERROR)
+        raise PluginException(err)
+    except PluginException as err:
         if errdialog:
-            dialog.notification(tr(30102), str(e), NOTIFICATION_ERROR)
-        raise e
-    except Exception as e:
-        xbmc.log('call_rpc exception:' + str(e))
-        raise e
+            dialog.notification(get_string(30102), str(err), xbmcgui.NOTIFICATION_ERROR)
+        raise err
+    except Exception as err:
+        xbmc.log('call_rpc exception:' + str(err))
+        raise err
 
-def request_get( url, data=None, extraHeaders=None ):
+def request_get( url, data=None, extra_headers=None ):
 
     """ makes a request """
 
@@ -63,8 +83,8 @@ def request_get( url, data=None, extraHeaders=None ):
         }
 
         # add extra headers
-        if extraHeaders:
-            my_headers.update(extraHeaders)
+        if extra_headers:
+            my_headers.update(extra_headers)
 
         # make request
         if data:
@@ -76,3 +96,49 @@ def request_get( url, data=None, extraHeaders=None ):
 
     except Exception:
         return ''
+
+def serialize_uri(item):
+
+    """ all uris passed via kodi's routing system must be urlquoted """
+
+    if type(item) is dict:
+        return quote(item['name'] + '#' + item['claim_id'])
+    return quote(item)
+
+def deserialize_uri(item):
+
+    """ all uris passed via kodi's routing system must be urlquoted """
+
+    return unquote(item)
+
+def item_set_info( line_item, properties ):
+
+    """ line item set info """
+
+    if KODI_VERSION > 19.8:
+        vidtag = line_item.getVideoInfoTag()
+        if properties.get( 'year' ):
+            vidtag.setYear( properties.get( 'year' ) )
+        if properties.get( 'episode' ):
+            vidtag.setEpisode( properties.get( 'episode' ) )
+        if properties.get( 'season' ):
+            vidtag.setSeason( properties.get( 'season' ) )
+        if properties.get( 'plot' ):
+            vidtag.setPlot( properties.get( 'plot' ) )
+        if properties.get( 'title' ):
+            vidtag.setTitle( properties.get( 'title' ) )
+        if properties.get( 'studio' ):
+            vidtag.setStudios([ properties.get( 'studio' ) ])
+        if properties.get( 'writer' ):
+            vidtag.setWriters([ properties.get( 'writer' ) ])
+        if properties.get( 'duration' ):
+            vidtag.setDuration( int( properties.get( 'duration' ) ) )
+        if properties.get( 'tvshowtitle' ):
+            vidtag.setTvShowTitle( properties.get( 'tvshowtitle' ) )
+        if properties.get( 'mediatype' ):
+            vidtag.setMediaType( properties.get( 'mediatype' ) )
+        if properties.get('premiered'):
+            vidtag.setPremiered( properties.get( 'premiered' ) )
+
+    else:
+        line_item.setInfo('video', properties)

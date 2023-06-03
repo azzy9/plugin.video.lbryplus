@@ -21,12 +21,15 @@ class odysee:
     auth_token = ''
     device_id = ''
 
-    # Construct to get the saved details
     def __init__( self ):
+
+        """ Construct to get the saved details """
+
         self.details_load()
 
-    # get the saved login details
     def details_load( self ):
+
+        """ gets the saved login details """
 
         self.signed_in = ADDON.getSetting( 'signed_in' )
         self.email = ADDON.getSetting( 'email' )
@@ -39,12 +42,16 @@ class odysee:
             self.device_id = self.generate_id().decode("utf-8")
             ADDON.setSetting( 'device_id', self.device_id )
 
-    # if there is login details
     def has_login_details( self ):
+
+        """ checks if there are login details present """
+
         return ( self.email and self.password )
 
-    # new user login to get auth token which can then be used to login
     def user_new( self ):
+
+        """ new user login to get auth token which can then be used to login """
+
         data = {
             'auth_token': '',
             'language': 'en',
@@ -59,6 +66,9 @@ class odysee:
                 return self.auth_token
 
     def user_exists( self, email ):
+
+        """ Checks if the user exists based upon email """
+
         data = {
             'auth_token': self.auth_token,
             'email': email,
@@ -70,6 +80,8 @@ class odysee:
         return False
 
     def user_signin( self ):
+
+        """ Attempts to sign in """
 
         if self.user_exists( self.email ):
             data = {
@@ -84,22 +96,49 @@ class odysee:
         return False
 
     def user_me( self ):
+
+        """ Gets info about user """
+
+        data = {}
         result = request_get( self.API_URL + '/user/me', data=data )
+        if result:
+            result = json.loads(result)
+            return result and result[ 'success' ]
+        return False
 
     def locale_get( self ):
+
+        """ Gets current locale info """
+
+        data = {}
         result = request_get( self.API_URL + '/locale/get', data=data )
+        if result:
+            result = json.loads(result)
+            return result and result[ 'success' ]
+        return False
 
     def notification_list( self ):
+
+        """ Gets list of notifications """
+
+        data = {}
         result = request_get( self.API_URL + '/notification/list', data=data )
+        if result:
+            result = json.loads(result)
+            return result and result[ 'success' ]
+        return False
 
     def generate_id( self, num_bytes = 64 ):
+
+        """ Generates ID - Try to base this upon the App """
 
         import secrets
         import hashlib
         from resources.lib.base58 import base58
 
         try:
-            return base58.b58encode( hashlib.sha384(secrets.token_bytes( num_bytes )).hexdigest() )[:66]
+            return base58.b58encode(
+                hashlib.sha384(secrets.token_bytes( num_bytes )).hexdigest()
+            )[:66]
         except Exception:
             return ''
-       

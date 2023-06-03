@@ -15,7 +15,6 @@ from urllib.parse import quote, unquote, quote_plus, unquote_plus
 from resources.lib.exception import *
 
 ADDON = xbmcaddon.Addon()
-tr = ADDON.getLocalizedString
 
 odysee_comment_api_url = 'https://comments.odysee.com/api/v2'
 
@@ -40,33 +39,37 @@ dialog = Dialog()
 
 def call_comment_rpc(method, params={}, errdialog=True):
     try:
-        xbmc.log('call_comment_rpc: url=' + odysee_comment_api_url + ', method=' + method + ', params=' + str(params))
+        xbmc.log('call_comment_rpc: url=' + odysee_comment_api_url \
+            + ', method=' + method + ', params=' + str(params))
+
         headers = {'content-type' : 'application/json'}
-        json = { 'jsonrpc' : '2.0', 'id' : 1, 'method': method, 'params': params }
-        result = requests.post(odysee_comment_api_url, headers=headers, json=json)
+        json_data = { 'jsonrpc' : '2.0', 'id' : 1, 'method': method, 'params': params }
+        result = requests.post(odysee_comment_api_url, headers=headers, json=json_data)
         result.raise_for_status()
         rjson = result.json()
         if 'error' in rjson:
             raise PluginException(rjson['error']['message'])
         return result.json()['result']
-    except requests.exceptions.ConnectionError as e:
+    except requests.exceptions.ConnectionError as err:
         if errdialog:
-            dialog.notification(tr(30105), tr(30108), NOTIFICATION_ERROR)
-        raise PluginException(e)
-    except requests.exceptions.HTTPError as e:
+            dialog.notification(get_string(30105), get_string(30108), NOTIFICATION_ERROR)
+        raise PluginException(err)
+    except requests.exceptions.HTTPError as err:
         if errdialog:
-            dialog.notification(tr(30101), str(e), NOTIFICATION_ERROR)
-        raise PluginException(e)
-    except PluginException as e:
+            dialog.notification(get_string(30101), str(err), NOTIFICATION_ERROR)
+        raise PluginException(err)
+    except PluginException as err:
         if errdialog:
-            dialog.notification(tr(30107), str(e), NOTIFICATION_ERROR)
-        raise e
-    except Exception as e:
-        xbmc.log('call_comment_rpc exception:' + str(e))
-        raise e
+            dialog.notification(get_string(30107), str(err), NOTIFICATION_ERROR)
+        raise err
+    except Exception as err:
+        xbmc.log('call_comment_rpc exception:' + str(err))
+        raise err
 
-# Sign data if a user channel is selected
 def sign(data):
+
+    """ Sign data if a user channel is selected """
+
     user_channel = get_user_channel()
     if not user_channel:
         return None
@@ -80,18 +83,6 @@ def sign(data):
     toHex = lambda x : "".join([format(c,'02x') for c in x])
 
     return call_rpc('channel_sign', params={'channel_id': user_channel[1], 'hexdata': toHex(bdata)})
-
-
-def serialize_uri(item):
-    # all uris passed via kodi's routing system must be urlquoted
-    if type(item) is dict:
-        return quote(item['name'] + '#' + item['claim_id'])
-    else:
-        return quote(item)
-
-def deserialize_uri(item):
-    # all uris passed via kodi's routing system must be urlquoted
-    return unquote(item)
 
 def to_video_listitem(item, playlist='', channel='', repost=None):
     li = ListItem(item['value']['title'] if 'title' in item['value'] else item['file_name'] if 'file_name' in item else '')
@@ -123,24 +114,24 @@ def to_video_listitem(item, playlist='', channel='', repost=None):
         if 'signing_channel' in item and 'name' in item['signing_channel']:
             comment_uri = item['signing_channel']['name'] + '#' + item['signing_channel']['claim_id'] + '#' + item['claim_id']
             menu.append((
-                tr(30238), 'RunPlugin(%s)' % plugin.url_for(plugin_comment_show, uri=serialize_uri(comment_uri))
+                get_string(30238), 'RunPlugin(%s)' % plugin.url_for(plugin_comment_show, uri=serialize_uri(comment_uri))
             ))
 
         menu.append((
-            tr(30212) % tr(30211), 'RunPlugin(%s)' % plugin.url_for(plugin_playlist_add, name=quote(tr(30211)), uri=serialize_uri(item))
+            get_string(30212) % get_string(30211), 'RunPlugin(%s)' % plugin.url_for(plugin_playlist_add, name=quote(get_string(30211)), uri=serialize_uri(item))
         ))
     else:
         menu.append((
-            tr(30213) % tr(30211), 'RunPlugin(%s)' % plugin.url_for(plugin_playlist_del, name=quote(tr(30211)), uri=serialize_uri(item))
+            get_string(30213) % get_string(30211), 'RunPlugin(%s)' % plugin.url_for(plugin_playlist_del, name=quote(get_string(30211)), uri=serialize_uri(item))
         ))
 
     menu.append((
-        tr(30208), 'RunPlugin(%s)' % plugin.url_for(claim_download, uri=serialize_uri(item))
+        get_string(30208), 'RunPlugin(%s)' % plugin.url_for(claim_download, uri=serialize_uri(item))
     ))
 
     if 'signing_channel' in item and 'name' in item['signing_channel']:
         ch_name = item['signing_channel']['name']
-        ch_claim = item['signing_channel']['claim_id']
+        #ch_claim = item['signing_channel']['claim_id']
         ch_title = ''
         if 'value' in item['signing_channel'] and 'title' in item['signing_channel']['value']:
             ch_title = item['signing_channel']['value']['title']
@@ -151,20 +142,20 @@ def to_video_listitem(item, playlist='', channel='', repost=None):
 
         if channel == '':
             menu.append((
-                tr(30207) % ch_name, 'Container.Update(%s)' % plugin.url_for(lbry_channel, uri=serialize_uri(item['signing_channel']),page=1)
+                get_string(30207) % ch_name, 'Container.Update(%s)' % plugin.url_for(lbry_channel, uri=serialize_uri(item['signing_channel']),page=1)
             ))
         menu.append((
-            tr(30205) % ch_name, 'RunPlugin(%s)' % plugin.url_for(plugin_follow, uri=serialize_uri(item['signing_channel']))
+            get_string(30205) % ch_name, 'RunPlugin(%s)' % plugin.url_for(plugin_follow, uri=serialize_uri(item['signing_channel']))
         ))
 
-    if repost != None:
+    if repost is not None:
         if 'signing_channel' in repost and 'name' in repost['signing_channel']:
-            plot = (('[COLOR yellow]%s[/COLOR]\n' % tr(30217)) % repost['signing_channel']['name']) + plot
+            plot = (('[COLOR yellow]%s[/COLOR]\n' % get_string(30217)) % repost['signing_channel']['name']) + plot
         else:
-            plot = ('[COLOR yellow]%s[/COLOR]\n' % tr(30216)) + plot
+            plot = ('[COLOR yellow]%s[/COLOR]\n' % get_string(30216)) + plot
 
     infoLabels['plot'] = plot
-    li.setInfo('video', infoLabels)
+    item_set_info( li, infoLabels )
     li.addContextMenuItems(menu)
 
     return li
@@ -210,7 +201,7 @@ def result_to_itemlist(result, playlist='', channel=''):
             menu = []
             ch_name = item['name']
             menu.append((
-                tr(30205) % ch_name, 'RunPlugin(%s)' % plugin.url_for(plugin_follow, uri=serialize_uri(item))
+                get_string(30205) % ch_name, 'RunPlugin(%s)' % plugin.url_for(plugin_follow, uri=serialize_uri(item))
             ))
             li.addContextMenuItems(menu)
 
@@ -240,14 +231,15 @@ def clear_user_channel():
 
 @plugin.route('/select_user_channel')
 def select_user_channel():
-    progressDialog = xbmcgui.DialogProgress()
-    progressDialog.create(tr(30231))
+
+    progress_dialog = xbmcgui.DialogProgress()
+    progress_dialog.create(get_string(30231))
 
     page = 1
     total_pages = 1
     items = []
     while page <= total_pages:
-        if progressDialog.iscanceled():
+        if progress_dialog.iscanceled():
             break
 
         try:
@@ -258,35 +250,38 @@ def select_user_channel():
                 items += result['items']
             else:
                 break
-        except:
+        except Exception:
             pass
 
         page = page + 1
-        progressDialog.update(int(100.0*page/total_pages), tr(30220) + ' %s/%s' % (page, total_pages))
+        progress_dialog.update(
+            int(100.0*page/total_pages), get_string(30220) + ' %s/%s' % (page, total_pages)
+        )
 
     selected_item = None
 
     if len(items) == 0:
-        progressDialog.update(100, tr(30232)) # No owned channels found
+        progress_dialog.update(100, get_string(30232)) # No owned channels found
         xbmc.sleep(1000)
-        progressDialog.close()
+        progress_dialog.close()
         return
-    elif len(items) == 1:
-        progressDialog.update(100, tr(30233)) # Found single user
+
+    if len(items) == 1:
+        progress_dialog.update(100, get_string(30233)) # Found single user
         xbmc.sleep(1000)
-        progressDialog.close()
+        progress_dialog.close()
 
         selected_item = items[0]
     else:
-        progressDialog.update(100, tr(30234)) # Multiple users found
+        progress_dialog.update(100, get_string(30234)) # Multiple users found
         xbmc.sleep(1000)
-        progressDialog.close()
+        progress_dialog.close()
 
         names = []
         for item in items:
             names.append(item['name'])
 
-        selected_name_index = dialog.select(tr(30239), names) # Post As
+        selected_name_index = dialog.select(get_string(30239), names) # Post As
 
         if selected_name_index >= 0: # If not cancelled
             selected_item = items[selected_name_index]
@@ -295,6 +290,7 @@ def select_user_channel():
         set_user_channel(selected_item['name'], selected_item['claim_id'])
 
 class CommentWindow(WindowXML):
+
     def __init__(self, *args, **kwargs):
         self.channel_name = kwargs['channel_name']
         self.channel_id = kwargs['channel_id']
@@ -309,14 +305,14 @@ class CommentWindow(WindowXML):
         if action == xbmcgui.ACTION_CONTEXT_MENU:
             # Commenting is not supported
             if using_lbry_proxy:
-                ret = dialog.contextmenu([tr(30240)]) # Only allow refreshing
+                ret = dialog.contextmenu([get_string(30240)]) # Only allow refreshing
                 if ret == 0:
                     self.refresh()
                 return
 
             # No user channel. Allow user to select an account or refresh.
             if not get_user_channel():
-                ret = dialog.contextmenu([tr(30240)])
+                ret = dialog.contextmenu([get_string(30240)])
                 if ret == 0:
                     self.refresh()
                 return
@@ -335,13 +331,13 @@ class CommentWindow(WindowXML):
                 if item:
                     comment_id = item.getProperty('id')
 
-                    menu.append(tr(30226)) # Like
+                    menu.append(get_string(30226)) # Like
                     offsets.append(0)
 
-                    menu.append(tr(30227)) # Dislike
+                    menu.append(get_string(30227)) # Dislike
                     offsets.append(1)
 
-                    menu.append(tr(30228)) # Clear Vote
+                    menu.append(get_string(30228)) # Clear Vote
                     offsets.append(2)
 
                     offset = 3
@@ -351,22 +347,22 @@ class CommentWindow(WindowXML):
                     offsets.append(invalid_offset)
                     offset = 0
 
-                menu.append(tr(30221)) # New comment
+                menu.append(get_string(30221)) # New comment
                 offsets.append(offset)
                 offset = offset + 1
 
                 if item:
-                    menu.append(tr(30222)) # Reply
+                    menu.append(get_string(30222)) # Reply
                     offsets.append(offset)
                     offset = offset + 1
 
                     if item.getProperty('channel_id') == get_user_channel()[1]:
 
-                        menu.append(tr(30223)) # Edit
+                        menu.append(get_string(30223)) # Edit
                         offsets.append(offset)
                         offset = offset + 1
 
-                        menu.append(tr(30224)) # Remove
+                        menu.append(get_string(30224)) # Remove
                         offsets.append(offset)
                         offset = offset + 1
                     else:
@@ -377,7 +373,7 @@ class CommentWindow(WindowXML):
                     offsets.append(invalid_offset)
                     offsets.append(invalid_offset)
 
-                menu.append(tr(30240)) # Refresh
+                menu.append(get_string(30240)) # Refresh
                 offsets.append(offset)
 
                 ret = dialog.contextmenu(menu)
@@ -398,12 +394,12 @@ class CommentWindow(WindowXML):
                     self.refresh_label(item)
 
                 elif ret == offsets[3]: # New Comment
-                    comment = dialog.input(tr(30221), type=xbmcgui.INPUT_ALPHANUM)
+                    comment = dialog.input(get_string(30221), type=xbmcgui.INPUT_ALPHANUM)
                     if comment:
                         comment_id = self.create_comment(comment)
 
                         # Remove 'No Comments' item
-                        if ccl.size() == 1 and ccl.getListItem(0).getLabel() == tr(30230):
+                        if ccl.size() == 1 and ccl.getListItem(0).getLabel() == get_string(30230):
                             ccl.reset()
 
                         # Add new comment item
@@ -411,7 +407,7 @@ class CommentWindow(WindowXML):
                         ccl.selectItem(ccl.size()-1)
 
                 elif ret == offsets[4]: # Reply
-                    comment = dialog.input(tr(30222), type=xbmcgui.INPUT_ALPHANUM)
+                    comment = dialog.input(get_string(30222), type=xbmcgui.INPUT_ALPHANUM)
                     if comment:
                         comment_id = self.create_comment(comment, comment_id)
 
@@ -428,9 +424,9 @@ class CommentWindow(WindowXML):
                         ccl.selectItem(selected_pos+1)
 
                 elif ret == offsets[5]: # Edit
-                    id = item.getProperty('id');
+                    id = item.getProperty('id')
                     comment = item.getProperty('comment')
-                    comment = dialog.input(tr(30223), type=xbmcgui.INPUT_ALPHANUM, defaultt=comment)
+                    comment = dialog.input(get_string(30223), type=xbmcgui.INPUT_ALPHANUM, defaultt=comment)
                     if comment:
                         self.edit_comment(id, comment)
                         item.setProperty('comment', comment)
@@ -453,7 +449,7 @@ class CommentWindow(WindowXML):
                         ccl.selectItem(selected_pos-1)
 
                     if ccl.size() == 0:
-                        ccl.addItem(ListItem(label=tr(30230)))
+                        ccl.addItem(ListItem(label=get_string(30230)))
 
                 elif ret == offsets[7]: # Refresh
                     self.refresh()
@@ -487,8 +483,8 @@ class CommentWindow(WindowXML):
 
     def refresh(self):
         self.last_selected_position = -1
-        progressDialog = xbmcgui.DialogProgress()
-        progressDialog.create(tr(30219), tr(30220) + ' 1')
+        progress_dialog = xbmcgui.DialogProgress()
+        progress_dialog.create(get_string(30219), get_string(30220) + ' 1')
 
         ccl = self.get_comment_control_list()
 
@@ -497,9 +493,11 @@ class CommentWindow(WindowXML):
         total_pages = result['total_pages']
 
         while page < total_pages:
-            if progressDialog.iscanceled():
+            if progress_dialog.iscanceled():
                 break
-            progressDialog.update(int(100.0*page/total_pages), tr(30220) + " %s/%s" % (page + 1, total_pages))
+            progress_dialog.update(
+                int(100.0*page/total_pages), get_string(30220) + " %s/%s" % (page + 1, total_pages)
+            )
             page = page+1
             result['items'] += self.fetch_comment_list(page)['items']
 
@@ -515,15 +513,17 @@ class CommentWindow(WindowXML):
             others_reactions = result['others_reactions']
 
             # Items are returned newest to oldest which implies that child comments are always before their parents.
-            # Iterate from oldest to newest comments building up a pre-order traversal ordering of the comment tree. Order
-            # the tree roots by decreasing score (likes-dislikes).
+            # Iterate from oldest to newest comments building up a pre-order traversal ordering of the comment tree.
+            # Order the tree roots by decreasing score (likes-dislikes).
+
             sort_indices = []
             i = len(items)-1
             while i >= 0:
                 item = items[i]
                 comment_id = item['comment_id']
                 if 'parent_id' in item and item['parent_id'] != 0:
-                    for j in range(len(sort_indices)): # search for the parent in the sorted index list
+                    # search for the parent in the sorted index list
+                    for j in range(len(sort_indices)):
                         sorted_item = items[sort_indices[j][0]]
                         indent = sort_indices[j][1]
                         if sorted_item['comment_id'] == item['parent_id']: # found the parent
@@ -570,13 +570,17 @@ class CommentWindow(WindowXML):
                 else:
                     my_vote = 0
 
-                ccl.addItem(self.create_list_item(comment_id, channel_name, channel_id, likes, dislikes, comment, indent, my_vote))
+                ccl.addItem(
+                    self.create_list_item(
+                        comment_id, channel_name, channel_id, likes, dislikes, comment, indent, my_vote
+                    )
+                )
         else:
             if ccl.size() == 0:
-                ccl.addItem(ListItem(label=tr(30230))) # No Comments
+                ccl.addItem(ListItem(label=get_string(30230))) # No Comments
 
-        progressDialog.update(100)
-        progressDialog.close()
+        progress_dialog.update(100)
+        progress_dialog.close()
 
     def get_comment_control_list(self):
         return self.getControl(1)
@@ -606,7 +610,7 @@ class CommentWindow(WindowXML):
         return li_copy
 
     def refresh_label(self, li, selected=True):
-        li.getProperty('id');
+        li.getProperty('id')
         channel_name = li.getProperty('channel_name')
         channel_id = li.getProperty('channel_id')
         likes = int(li.getProperty('likes'))
@@ -614,7 +618,11 @@ class CommentWindow(WindowXML):
         comment = li.getProperty('comment')
         indent = int(li.getProperty('indent'))
         my_vote = int(li.getProperty('my_vote'))
-        li.setLabel(self.create_label(channel_name, channel_id, likes, dislikes, comment, indent, my_vote, selected))
+        li.setLabel(
+            self.create_label(
+                channel_name, channel_id, likes, dislikes, comment, indent, my_vote, selected
+            )
+        )
 
     def create_label(self, channel_name, channel_id, likes, dislikes, comment, indent, my_vote, selected=False):
         user_channel = get_user_channel()
@@ -632,7 +640,8 @@ class CommentWindow(WindowXML):
             likes = str(likes)
             dislikes = str(dislikes)
 
-        lilabel = channel_name + ' [COLOR orange]' + likes + '/' + dislikes + '[/COLOR] [COLOR white]' + comment + '[/COLOR]'
+        lilabel = channel_name + ' [COLOR orange]' + likes + '/' + dislikes \
+            + '[/COLOR] [COLOR white]' + comment + '[/COLOR]'
 
         padding = ''
         for i in range(indent):
@@ -648,15 +657,15 @@ class CommentWindow(WindowXML):
 
     def create_comment(self, comment, parent_id=None):
         user_channel = get_user_channel()
-        progressDialog = xbmcgui.DialogProgress()
-        progressDialog.create(tr(30241), tr(30242))
+        progress_dialog = xbmcgui.DialogProgress()
+        progress_dialog.create(get_string(30241), get_string(30242))
         params = { 'claim_id' : self.claim_id, 'comment' : comment, 'channel_id' : user_channel[1] }
         if parent_id:
             params['parent_id'] = parent_id
         self.sign(comment, params)
         res = call_comment_rpc('comment.Create', params)
         self.like(res['comment_id'])
-        progressDialog.close()
+        progress_dialog.close()
         return res['comment_id']
 
     def edit_comment(self, comment_id, comment):
@@ -704,17 +713,17 @@ class CommentWindow(WindowXML):
 
 @plugin.route('/')
 def lbry_root():
-    addDirectoryItem(ph, plugin.url_for(plugin_follows), ListItem(tr(30200)), True)
-    addDirectoryItem(ph, plugin.url_for(plugin_recent, page=1), ListItem(tr(30218)), True)
-    #addDirectoryItem(ph, plugin.url_for(plugin_playlists), ListItem(tr(30210)), True)
-    addDirectoryItem(ph, plugin.url_for(plugin_playlist, name=quote_plus(tr(30211))), ListItem(tr(30211)), True)
-    #addDirectoryItem(ph, plugin.url_for(lbry_new, page=1), ListItem(tr(30202)), True)
-    addDirectoryItem(ph, plugin.url_for(lbry_search), ListItem(tr(30201)), True)
+    addDirectoryItem(ph, plugin.url_for(plugin_follows), ListItem(get_string(30200)), True)
+    addDirectoryItem(ph, plugin.url_for(plugin_recent, page=1), ListItem(get_string(30218)), True)
+    #addDirectoryItem(ph, plugin.url_for(plugin_playlists), ListItem(get_string(30210)), True)
+    addDirectoryItem(ph, plugin.url_for(plugin_playlist, name=quote_plus(get_string(30211))), ListItem(get_string(30211)), True)
+    #addDirectoryItem(ph, plugin.url_for(lbry_new, page=1), ListItem(get_string(30202)), True)
+    addDirectoryItem(ph, plugin.url_for(lbry_search), ListItem(get_string(30201)), True)
     endOfDirectory(ph)
 
 #@plugin.route('/playlists')
 #def plugin_playlists():
-#    addDirectoryItem(ph, plugin.url_for(plugin_playlist, name=quote_plus(tr(30211))), ListItem(tr(30211)), True)
+#    addDirectoryItem(ph, plugin.url_for(plugin_playlist, name=quote_plus(get_string(30211))), ListItem(get_string(30211)), True)
 #    endOfDirectory(ph)
 
 @plugin.route('/playlist/list/<name>')
@@ -778,7 +787,7 @@ def plugin_follows():
                 })
         menu = []
         menu.append((
-            tr(30206) % name, 'RunPlugin(%s)' % plugin.url_for(plugin_unfollow, uri=serialize_uri(uri))
+            get_string(30206) % name, 'RunPlugin(%s)' % plugin.url_for(plugin_unfollow, uri=serialize_uri(uri))
         ))
         li.addContextMenuItems(menu)
         addDirectoryItem(ph, plugin.url_for(lbry_channel, uri=serialize_uri(uri), page=1), li, True)
@@ -799,7 +808,7 @@ def plugin_recent(page):
     addDirectoryItems(ph, items, result['page_size'])
     total_pages = int(result['total_pages'])
     if total_pages > 1 and page < total_pages:
-        addDirectoryItem(ph, plugin.url_for(plugin_recent, page=page+1), ListItem(tr(30203)), True)
+        addDirectoryItem(ph, plugin.url_for(plugin_recent, page=page+1), ListItem(get_string(30203)), True)
     endOfDirectory(ph)
 
 @plugin.route('/comments/show/<uri>')
@@ -837,7 +846,7 @@ def lbry_new(page):
     addDirectoryItems(ph, items, result['page_size'])
     total_pages = int(result['total_pages'])
     if total_pages > 1 and page < total_pages:
-        addDirectoryItem(ph, plugin.url_for(lbry_new, page=page+1), ListItem(tr(30203)), True)
+        addDirectoryItem(ph, plugin.url_for(lbry_new, page=page+1), ListItem(get_string(30203)), True)
     endOfDirectory(ph)
 
 @plugin.route('/channel/<uri>')
@@ -856,12 +865,12 @@ def lbry_channel(uri,page):
     addDirectoryItems(ph, items, result['page_size'])
     total_pages = int(result['total_pages'])
     if total_pages > 1 and page < total_pages:
-        addDirectoryItem(ph, plugin.url_for(lbry_channel, uri=serialize_uri(uri), page=page+1), ListItem(tr(30203)), True)
+        addDirectoryItem(ph, plugin.url_for(lbry_channel, uri=serialize_uri(uri), page=page+1), ListItem(get_string(30203)), True)
     endOfDirectory(ph)
 
 @plugin.route('/search')
 def lbry_search():
-    query = dialog.input(tr(30209))
+    query = dialog.input(get_string(30209))
     lbry_search_pager(quote_plus(query), 1)
 
 @plugin.route('/search/<query>/<page>')
@@ -869,7 +878,12 @@ def lbry_search_pager(query, page):
     query = unquote_plus(query)
     page = int(page)
     if query != '':
-        params = {'text': query, 'page': page, 'page_size': items_per_page, 'order_by': 'release_time'}
+        params = {
+            'text': query,
+            'page': page,
+            'page_size': items_per_page,
+            'order_by': 'release_time'
+        }
         #always times out on server :(
         #if not ADDON.getSettingBool('server_filter_disable'):
         #    params['stream_types'] = ['video']
@@ -878,7 +892,7 @@ def lbry_search_pager(query, page):
         addDirectoryItems(ph, items, result['page_size'])
         total_pages = int(result['total_pages'])
         if total_pages > 1 and page < total_pages:
-            addDirectoryItem(ph, plugin.url_for(lbry_search_pager, query=quote_plus(query), page=page+1), ListItem(tr(30203)), True)
+            addDirectoryItem(ph, plugin.url_for(lbry_search_pager, query=quote_plus(query), page=page+1), ListItem(get_string(30203)), True)
         endOfDirectory(ph)
     else:
         endOfDirectory(ph, False)
@@ -893,9 +907,9 @@ def user_payment_confirmed(claim_info):
     for account in account_list['items']:
         if account['is_default']:
             balance = float(str(account['satoshis'])[:-6]) / float(100)
-    dtext = tr(30214) % (float(claim_info['value']['fee']['amount']), str(claim_info['value']['fee']['currency']))
-    dtext = dtext + '\n\n' + tr(30215) % (balance, str(claim_info['value']['fee']['currency']))
-    return dialog.yesno(tr(30204), dtext)
+    dtext = get_string(30214) % (float(claim_info['value']['fee']['amount']), str(claim_info['value']['fee']['currency']))
+    dtext = dtext + '\n\n' + get_string(30215) % (balance, str(claim_info['value']['fee']['currency']))
+    return dialog.yesno(get_string(30204), dtext)
 
 @plugin.route('/play/<uri>')
 def claim_play(uri):
@@ -903,12 +917,12 @@ def claim_play(uri):
 
     claim_info = call_rpc('resolve', {'urls': uri})[uri]
     if 'error' in claim_info:
-        dialog.notification(tr(30102), claim_info['error']['name'], NOTIFICATION_ERROR)
+        dialog.notification(get_string(30102), claim_info['error']['name'], NOTIFICATION_ERROR)
         return
 
     if 'fee' in claim_info['value']:
         if claim_info['value']['fee']['currency'] != 'LBC':
-            dialog.notification(tr(30204), tr(30103), NOTIFICATION_ERROR)
+            dialog.notification(get_string(30204), get_string(30103), NOTIFICATION_ERROR)
             return
 
         if not user_payment_confirmed(claim_info):
@@ -931,12 +945,12 @@ def claim_download(uri):
 
     claim_info = call_rpc('resolve', {'urls': uri})[uri]
     if 'error' in claim_info:
-        dialog.notification(tr(30102), claim_info['error']['name'], NOTIFICATION_ERROR)
+        dialog.notification(get_string(30102), claim_info['error']['name'], NOTIFICATION_ERROR)
         return
 
     if 'fee' in claim_info['value']:
         if claim_info['value']['fee']['currency'] != 'LBC':
-            dialog.notification(tr(30204), tr(30103), NOTIFICATION_ERROR)
+            dialog.notification(get_string(30204), get_string(30103), NOTIFICATION_ERROR)
             return
 
         if not user_payment_confirmed(claim_info):
@@ -947,5 +961,5 @@ def claim_download(uri):
 def run():
     try:
         plugin.run()
-    except PluginException as e:
-        xbmc.log("PluginException: " + str(e))
+    except PluginException as err:
+        xbmc.log("PluginException: " + str( err ))
