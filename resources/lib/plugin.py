@@ -780,12 +780,14 @@ def plugin_follows():
             infoLabels = { 'plot': plot }
             item_set_info( li, infoLabels )
 
-            if 'thumbnail' in channel_info['value'] and 'url' in channel_info['value']['thumbnail']:
-                li.setArt({
-                    'thumb': channel_info['value']['thumbnail']['url'],
-                    'poster': channel_info['value']['thumbnail']['url'],
-                    'fanart': channel_info['value']['thumbnail']['url']
-                })
+            thumbnail_url = channel_info.get('value', {}).get('thumbnail',{}).get('url', '')
+            cover_url = channel_info.get('value', {}).get('cover',{}).get('url', thumbnail_url)
+
+            li.setArt({
+                'thumb': thumbnail_url,
+                'poster': thumbnail_url,
+                'fanart': cover_url,
+            })
         menu = []
         menu.append((
             get_string(30206) % name, 'RunPlugin(%s)' % plugin.url_for(plugin_unfollow, uri=serialize_uri(uri))
