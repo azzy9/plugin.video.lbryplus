@@ -12,6 +12,12 @@ ADDON = xbmcaddon.Addon()
 def get_profile_path(rpath):
     return xbmcvfs.translatePath(ADDON.getAddonInfo('profile') + rpath)
 
+def get_stream_headers():
+
+    """ Gets stream headers - placeholder """
+
+    return ''
+
 def load_channel_subs():
     channels = []
     try:

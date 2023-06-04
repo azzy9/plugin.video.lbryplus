@@ -933,7 +933,7 @@ def claim_play(uri):
 
     # Use HTTP
     if ADDON.getSetting('useHTTP') == 'true':
-        stream_url = stream_url.replace('https://', 'http://', 1)
+        stream_url = stream_url.replace('https://', 'http://', 1) + get_stream_headers()
 
     (url,li) = result_to_itemlist([claim_info])[0]
     li.setPath(stream_url)

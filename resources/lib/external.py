@@ -27,6 +27,12 @@ def get_additional_header():
         return {'x-lbry-auth-token': odysee.auth_token}
     return {}
 
+def get_stream_headers():
+
+    """ Gets stream headers - required for some videos otherwise will return a 401 error """
+
+    return '|Referer=https://odysee.com/'
+
 def load_channel_subs():
 
     """ Gets Followed channels from Odysee """
