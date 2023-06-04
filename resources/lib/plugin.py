@@ -778,7 +778,7 @@ def plugin_follows():
             if 'description' in channel_info['value']:
                 plot = plot + channel_info['value']['description']
             infoLabels = { 'plot': plot }
-            li.setInfo('video', infoLabels)
+            item_set_info( li, infoLabels )
 
             if 'thumbnail' in channel_info['value'] and 'url' in channel_info['value']['thumbnail']:
                 li.setArt({
