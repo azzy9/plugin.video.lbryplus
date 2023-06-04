@@ -713,12 +713,13 @@ class CommentWindow(WindowXML):
 
 @plugin.route('/')
 def lbry_root():
-    addDirectoryItem(ph, plugin.url_for(plugin_follows), ListItem(get_string(30200)), True)
     addDirectoryItem(ph, plugin.url_for(plugin_recent, page=1), ListItem(get_string(30218)), True)
+    addDirectoryItem(ph, plugin.url_for(plugin_follows), ListItem(get_string(30200)), True)
     #addDirectoryItem(ph, plugin.url_for(plugin_playlists), ListItem(get_string(30210)), True)
     addDirectoryItem(ph, plugin.url_for(plugin_playlist, name=quote_plus(get_string(30211))), ListItem(get_string(30211)), True)
     #addDirectoryItem(ph, plugin.url_for(lbry_new, page=1), ListItem(get_string(30202)), True)
-    addDirectoryItem(ph, plugin.url_for(lbry_search), ListItem(get_string(30201)), True)
+    addDirectoryItem(ph, plugin.url_for(lbry_search), ListItem(get_string(137)), True)
+    addDirectoryItem(ph, plugin.url_for(settings), ListItem(get_string(5)), True)
     endOfDirectory(ph)
 
 #@plugin.route('/playlists')
@@ -957,6 +958,10 @@ def claim_download(uri):
             return
 
     call_rpc('get', {'uri': uri, 'save_file': True})
+
+@plugin.route('/settings')
+def settings():
+    ADDON.openSettings()
 
 def run():
     try:
