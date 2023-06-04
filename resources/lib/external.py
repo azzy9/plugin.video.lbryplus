@@ -17,7 +17,7 @@ def get_profile_path(rpath):
 
     """ Gets Profile Path """
 
-    return xbmcvfs.translatePath(ADDON.getAddonInfo('profile') + rpath)
+    return translate_path(ADDON.getAddonInfo('profile') + rpath)
 
 def get_additional_header():
 

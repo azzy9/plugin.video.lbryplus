@@ -3,8 +3,11 @@
 import xbmc
 import xbmcaddon
 import xbmcgui
+import xbmcvfs
 
 import requests
+
+import six
 
 from urllib.parse import quote,unquote,quote_plus,unquote_plus
 
@@ -31,6 +34,14 @@ def get_string( string_id ):
     if string_id >= 30000:
         return __language__( string_id )
     return xbmc.getLocalizedString( string_id )
+
+def translate_path(path):
+
+    """ method to translate path for both PY2 & PY3 """
+
+    if six.PY2:
+        return xbmc.translatePath( path )
+    return xbmcvfs.translatePath( path )
 
 def call_rpc(method, params={}, errdialog=True, additional_headers = None):
 

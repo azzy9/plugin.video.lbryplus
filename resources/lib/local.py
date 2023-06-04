@@ -10,7 +10,10 @@ from resources.lib.general import *
 ADDON = xbmcaddon.Addon()
 
 def get_profile_path(rpath):
-    return xbmcvfs.translatePath(ADDON.getAddonInfo('profile') + rpath)
+
+    """ Gets Profile Path """
+
+    return translate_path( ADDON.getAddonInfo('profile') + rpath )
 
 def get_stream_headers():
 
