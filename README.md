@@ -1,4 +1,4 @@
-# Kodi/XBMC plugin for LBRY and Odysee
+# Kodi plugin for LBRY with Odysee integration
 
 This plugin is a fork from https://github.com/accumulator/plugin.video.lbry by accumulator.
 
