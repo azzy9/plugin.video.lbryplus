@@ -24,6 +24,10 @@ else:
     from resources.lib.local import *
 from resources.lib.general import *
 
+if get_api_url() == '':
+    raise Exception('Lbry API URL is undefined.')
+using_lbry_proxy = get_api_url().find('api.lbry.tv') != -1
+
 # assure profile directory exists
 profile_path = ADDON.getAddonInfo('profile')
 if not xbmcvfs.exists(profile_path):
@@ -817,25 +821,24 @@ def plugin_recent(page):
 @plugin.route('/comments/show/<uri>')
 def plugin_comment_show(uri):
     params = deserialize_uri(uri).split('#')
-    win = CommentWindow('addon-lbry-comments.xml', xbmcaddon.Addon().getAddonInfo('path'), 'Default', channel_name=params[0], channel_id=params[1], claim_id=params[2])
+    win = CommentWindow(
+        'addon-lbry-comments.xml',
+        xbmcaddon.Addon().getAddonInfo('path'),
+        'Default',
+        channel_name=params[0],
+        channel_id=params[1],
+        claim_id=params[2]
+    )
     win.doModal()
     del win
 
 @plugin.route('/follows/add/<uri>')
 def plugin_follow(uri):
-    uri = deserialize_uri(uri)
-    channels = load_channel_subs()
-    channel = (uri.split('#')[0],uri.split('#')[1])
-    if not channel in channels:
-        channels.append(channel)
-    save_channel_subs(channels)
+    add_channel_sub(uri)
 
 @plugin.route('/follows/del/<uri>')
 def plugin_unfollow(uri):
-    uri = deserialize_uri(uri)
-    channels = load_channel_subs()
-    channels.remove((uri.split('#')[0],uri.split('#')[1]))
-    save_channel_subs(channels)
+    remove_channel_sub(uri)
     xbmc.executebuiltin('Container.Refresh')
 
 @plugin.route('/new/<page>')

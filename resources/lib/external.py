@@ -52,19 +52,24 @@ def load_channel_subs():
             channels.append((items[0],items[1]))
     return channels
 
-def save_channel_subs(channels):
+def add_channel_sub(uri):
 
-    """ TODO: Move to Odysee """
+    """ adds an Odysee subscription """
 
-    try:
-        with xbmcvfs.File(get_profile_path('channel_subs'), 'w') as f:
-            for (name, claim_id) in channels:
-                f.write(bytearray(name.encode('utf-8')))
-                f.write('#')
-                f.write(bytearray(claim_id.encode('utf-8')))
-                f.write('\n')
-    except Exception as err:
-        xbmcgui.Dialog().notification(get_string(30104), str(err), xbmcgui.NOTIFICATION_ERROR)
+    uri = deserialize_uri(uri)
+    channel_name = uri.split('#')[0]
+    claim_id = uri.split('#')[1]
+
+    odysee.subscription_new(channel_name, claim_id)
+
+def remove_channel_sub(uri):
+
+    """ removes an Odysee subscription """
+
+    uri = deserialize_uri(uri)
+    claim_id = uri.split('#')[1]
+
+    odysee.subscription_delete(claim_id)
 
 def load_playlist(name):
     items = []
@@ -92,12 +97,22 @@ def odysee_init():
 
     """ Initiate Odysee Login """
 
+    # check if we have a new login
     if odysee.has_login_details() and not odysee.auth_token:
         odysee.user_new()
 
+    # checks if the odysee user is still logged in
+    if odysee.has_login_details() and odysee.auth_token and odysee.signed_in:
+        if not odysee.user_me():
+            odysee.signed_in = 'False'
+            ADDON.setSetting( 'signed_in', odysee.signed_in )
+
+    # Try to login
     if odysee.has_login_details() and odysee.auth_token and not odysee.signed_in:
         if odysee.user_signin():
             odysee.signed_in = 'True'
             ADDON.setSetting( 'signed_in', odysee.signed_in )
+        else:
+            raise Exception('Unable to Login')
 
 odysee_init()

@@ -3,13 +3,10 @@ Main Odysee integration class
 Created by Azzy9
 """
 
-import email
-import xbmc, xbmcaddon
+import xbmcaddon
 from resources.lib.general import *
 
 ADDON = xbmcaddon.Addon()
-
-import json
 
 class odysee:
 
@@ -58,12 +55,11 @@ class odysee:
             'app_id': self.device_id,
         }
         result = request_get( self.API_URL + '/user/new', data=data )
-        if result:
-            result = json.loads(result)
-            if result and result[ 'success' ]:
-                self.auth_token = result[ 'data' ][ 'auth_token' ]
-                ADDON.setSetting( 'auth_token', self.auth_token )
-                return self.auth_token
+        if result and result[ 'success' ]:
+            self.auth_token = result[ 'data' ][ 'auth_token' ]
+            ADDON.setSetting( 'auth_token', self.auth_token )
+            return self.auth_token
+        return ''
 
     def user_exists( self, email ):
 
@@ -74,10 +70,7 @@ class odysee:
             'email': email,
         }
         result = request_get( self.API_URL + '/user/exists', data=data )
-        if result:
-            result = json.loads(result)
-            return result and result[ 'success' ]
-        return False
+        return result and result[ 'success' ]
 
     def user_signin( self ):
 
@@ -90,30 +83,44 @@ class odysee:
                 'password': self.password,
             }
             result = request_get( self.API_URL + '/user/signin', data=data )
-            if result:
-                result = json.loads(result)
-                return result and result[ 'success' ]
+            return result and result[ 'success' ]
         return False
 
     def user_me( self ):
 
         """ Gets info about user """
 
-        data = {}
+        data = {
+            'auth_token': self.auth_token,
+        }
         result = request_get( self.API_URL + '/user/me', data=data )
-        if result:
-            result = json.loads(result)
+        return result and result[ 'success' ]
+
+    def subscription_new( self, channel_name, claim_id ):
+
+        """ Add a subscription """
+
+        if channel_name:
+            data = {
+                'auth_token': self.auth_token,
+                'channel_name': channel_name,
+                'claim_id': claim_id,
+                'notifications_disabled': 'true',
+            }
+            result = request_get( self.API_URL + '/subscription/new', data=data )
             return result and result[ 'success' ]
         return False
 
-    def locale_get( self ):
+    def subscription_delete( self, claim_id ):
 
-        """ Gets current locale info """
+        """ Delete a subscription """
 
-        data = {}
-        result = request_get( self.API_URL + '/locale/get', data=data )
-        if result:
-            result = json.loads(result)
+        if claim_id:
+            data = {
+                'auth_token': self.auth_token,
+                'claim_id': claim_id,
+            }
+            result = request_get( self.API_URL + '/subscription/delete', data=data )
             return result and result[ 'success' ]
         return False
 
@@ -121,12 +128,21 @@ class odysee:
 
         """ Gets list of notifications """
 
-        data = {}
+        data = {
+            'auth_token': self.auth_token,
+        }
         result = request_get( self.API_URL + '/notification/list', data=data )
-        if result:
-            result = json.loads(result)
-            return result and result[ 'success' ]
-        return False
+        return result and result[ 'success' ]
+
+    def locale_get( self ):
+
+        """ Gets current locale info """
+
+        data = {}
+        result = request_get( self.API_URL + '/locale/get', data=data )
+        if result and result[ 'success' ]:
+            return result[ 'data' ]
+        return {}
 
     def generate_id( self, num_bytes = 64 ):
 

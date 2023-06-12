@@ -37,6 +37,20 @@ def load_channel_subs():
         channels.append((items[0],items[1]))
     return channels
 
+def add_channel_sub(uri):
+    uri = deserialize_uri(uri)
+    channels = load_channel_subs()
+    channel = (uri.split('#')[0],uri.split('#')[1])
+    if channel not in channels:
+        channels.append(channel)
+    save_channel_subs(channels)
+
+def remove_channel_sub(uri):
+    uri = deserialize_uri(uri)
+    channels = load_channel_subs()
+    channels.remove((uri.split('#')[0],uri.split('#')[1]))
+    save_channel_subs(channels)
+
 def save_channel_subs(channels):
     try:
         with xbmcvfs.File(get_profile_path('channel_subs'), 'w') as f:

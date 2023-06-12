@@ -19,11 +19,6 @@ KODI_VERSION = float(xbmcaddon.Addon('xbmc.addon').getAddonInfo('version')[:4])
 #language
 __language__ = ADDON.getLocalizedString
 
-lbry_api_url = unquote(ADDON.getSetting('lbry_api_url'))
-if lbry_api_url == '':
-    raise Exception('Lbry API URL is undefined.')
-using_lbry_proxy = lbry_api_url.find('api.lbry.tv') != -1
-
 dialog = xbmcgui.Dialog()
 reqs = requests.session()
 
@@ -34,6 +29,15 @@ def get_string( string_id ):
     if string_id >= 30000:
         return __language__( string_id )
     return xbmc.getLocalizedString( string_id )
+
+def get_api_url():
+
+    """ gets api URL - enforces Odysee url if using Odysee functionality """
+
+    if ADDON.getSetting( 'odysee_enable' ) == 'true':
+        return 'https://api.na-backend.odysee.com/api/v1/proxy'
+
+    return unquote(ADDON.getSetting('lbry_api_url'))
 
 def translate_path(path):
 
@@ -48,12 +52,12 @@ def call_rpc(method, params={}, errdialog=True, additional_headers = None):
     """ Makes a RPC Call """
 
     try:
-        xbmc.log('call_rpc: url=' + lbry_api_url + ', method=' + method + ', params=' + str(params))
+        xbmc.log('call_rpc: url=' + get_api_url() + ', method=' + method + ', params=' + str(params))
         headers = {'content-type' : 'application/json'}
         if additional_headers:
             headers.update( additional_headers )
         json_data = { 'jsonrpc' : '2.0', 'id' : 1, 'method': method, 'params': params }
-        result = requests.post(lbry_api_url, headers=headers, json=json_data)
+        result = requests.post(get_api_url(), headers=headers, json=json_data)
         result.raise_for_status()
         rjson = result.json()
         if 'error' in rjson:
@@ -75,7 +79,7 @@ def call_rpc(method, params={}, errdialog=True, additional_headers = None):
         xbmc.log('call_rpc exception:' + str(err))
         raise err
 
-def request_get( url, data=None, extra_headers=None ):
+def request_get( url, data=None, extra_headers=None, return_json=True ):
 
     """ makes a request """
 
@@ -86,7 +90,7 @@ def request_get( url, data=None, extra_headers=None ):
             'Accept-Language': 'en-gb,en;q=0.5',
             'User-Agent': 'Mozilla/5.0 (Windows NT 10.0; Win64; x64) AppleWebKit/537.36 (KHTML, like Gecko) Chrome/113.0.0.0 Safari/537.36',
             'Accept': 'a*/*',
-            'content-type': 'application/x-www-form-urlencoded',
+            'Content-type': 'application/x-www-form-urlencoded',
             'Referer': url,
             'Cache-Control': 'no-cache',
             'Pragma': 'no-cache',
@@ -103,6 +107,8 @@ def request_get( url, data=None, extra_headers=None ):
         else:
             response = reqs.get(url, headers=my_headers, verify=False, timeout=10)
 
+        if return_json:
+            return response.json()
         return response.text
 
     except Exception:
