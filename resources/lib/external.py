@@ -111,7 +111,7 @@ def get_wallet_address():
             'address_unused',
             {},
             additional_headers=get_additional_header()
-        )[ 'result' ]
+        )
 
     return wallet_address
 

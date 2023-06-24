@@ -252,7 +252,8 @@ def lbry_root():
     if wallet_balance is not False:
         addDirectoryItem(ph, plugin.url_for(lbry_root), xbmcgui.ListItem('Wallet: ' + wallet_balance), False)
 
-    addDirectoryItem(ph, plugin.url_for(show_rewards), xbmcgui.ListItem('Rewards'), True)
+    if ODYSEE.has_login_details() and ODYSEE.signed_in:
+        addDirectoryItem(ph, plugin.url_for(show_rewards), xbmcgui.ListItem('Rewards'), True)
 
     addDirectoryItem(ph, plugin.url_for(settings), xbmcgui.ListItem(get_string(5)), True)
     endOfDirectory(ph)
@@ -438,24 +439,42 @@ def lbry_search_pager(query, page):
 def show_rewards():
 
     """ Shows rewards """
-    import json
+
     rewards = ODYSEE.reward_list()
-    xbmc.log( json.dumps( rewards ), xbmc.LOGWARNING )
 
     current_url = plugin.url_for(show_rewards)
 
     if rewards:
         for reward in reversed(rewards):
-            xbmc.log( json.dumps( reward ), xbmc.LOGWARNING )
+
+            reward_url = current_url
+            if reward[ 'claim_code' ]:
+                reward_url = plugin.url_for(claim_reward, reward_type=reward[ 'reward_type' ], claim_code=reward[ 'claim_code' ])
 
             reward_title = reward[ 'reward_title' ] + ': ' + str( reward[ 'reward_amount' ] )
 
             if reward[ 'id' ] > 0:
                 reward_title += ' (Claimed ' + reward[ 'created_at' ].replace( 'T', ' ' ).replace( 'Z', '' ) + ')'
 
-            addDirectoryItem(ph, current_url, xbmcgui.ListItem( reward_title ), False)
+            addDirectoryItem(ph, reward_url, xbmcgui.ListItem( reward_title ), False)
 
     endOfDirectory(ph)
+
+@plugin.route('/claim_reward/<reward_type>/<claim_code>')
+def claim_reward(reward_type, claim_code):
+
+    """ Try to claim reward """
+
+    wallet_address = get_wallet_address()
+
+    if wallet_address is not False:
+        reward_claimed = ODYSEE.reward_claim( reward_type, wallet_address, claim_code )
+
+        if reward_claimed is not False:
+            if reward_claimed[ 'success' ] is False:
+                dialog.notification('Claim Reward', reward_claimed[ 'error' ], xbmcgui.NOTIFICATION_ERROR)
+            else:
+                dialog.notification('Claim Reward', 'Reward Claimed', xbmcgui.NOTIFICATION_INFO)
 
 def user_payment_confirmed(claim_info):
     # paid for claim already?

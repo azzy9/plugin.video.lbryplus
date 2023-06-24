@@ -156,7 +156,8 @@ class Odysee:
                 'claim_code': claim_code,
             }
             result = request_get( self.API_URL + '/reward/claim', data=data )
-            return result and result[ 'success' ]
+
+            return result
         return False
 
     def reward_list( self ):
