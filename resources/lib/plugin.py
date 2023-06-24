@@ -16,7 +16,9 @@ from resources.lib.comments import CommentWindow, using_lbry_proxy
 
 ADDON = xbmcaddon.Addon()
 
-if ADDON.getSetting( 'odysee_enable' ) == 'true':
+ODYSEE_ENABLED = ADDON.getSetting( 'odysee_enable' ) == 'true'
+
+if ODYSEE_ENABLED:
     from resources.lib.external import *
 else:
     from resources.lib.local import *
@@ -249,11 +251,13 @@ def lbry_root():
 
     wallet_balance = get_wallet_balance()
 
-    if wallet_balance is not False:
-        addDirectoryItem(ph, plugin.url_for(lbry_root), xbmcgui.ListItem('Wallet: ' + wallet_balance), False)
+    if ODYSEE_ENABLED:
 
-    if ODYSEE.has_login_details() and ODYSEE.signed_in:
-        addDirectoryItem(ph, plugin.url_for(show_rewards), xbmcgui.ListItem('Rewards'), True)
+        if wallet_balance is not False:
+            addDirectoryItem(ph, plugin.url_for(lbry_root), xbmcgui.ListItem('Wallet: ' + wallet_balance), False)
+
+        if ODYSEE.has_login_details() and ODYSEE.signed_in:
+            addDirectoryItem(ph, plugin.url_for(show_rewards), xbmcgui.ListItem('Rewards'), True)
 
     addDirectoryItem(ph, plugin.url_for(settings), xbmcgui.ListItem(get_string(5)), True)
     endOfDirectory(ph)
