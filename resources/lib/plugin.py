@@ -3,15 +3,15 @@ from __future__ import absolute_import
 
 import xbmc
 import xbmcaddon
-from xbmcgui import ListItem, Dialog
+import xbmcgui
 from xbmcplugin import addDirectoryItem, addDirectoryItems, endOfDirectory, setContent, setResolvedUrl
 
 import routing
 import time
 
-from urllib.parse import quote, unquote, quote_plus, unquote_plus
+from urllib.parse import quote, quote_plus, unquote_plus
 
-from resources.lib.exception import *
+from resources.lib.exception import PluginException
 from resources.lib.comments import CommentWindow, using_lbry_proxy
 
 ADDON = xbmcaddon.Addon()
@@ -36,11 +36,11 @@ nsfw = ADDON.getSettingBool('nsfw')
 plugin = routing.Plugin()
 ph = plugin.handle
 setContent(ph, 'videos')
-dialog = Dialog()
+dialog = xbmcgui.Dialog()
 
 def to_video_listitem(item, playlist='', channel='', repost=None):
 
-    line_item = ListItem(item['value']['title'] if 'title' in item['value'] else item['file_name'] if 'file_name' in item else '')
+    line_item = xbmcgui.ListItem(item['value']['title'] if 'title' in item['value'] else item['file_name'] if 'file_name' in item else '')
     line_item.setProperty('IsPlayable', 'true')
     if 'thumbnail' in item['value'] and 'url' in item['value']['thumbnail']:
         line_item.setArt({
@@ -145,7 +145,7 @@ def result_to_itemlist(result, playlist='', channel=''):
 
             items.append((url, line_item))
         elif item['value_type'] == 'channel':
-            line_item = ListItem('[B]%s[/B] [I]#%s[/I]' % (item['name'], item['claim_id'][0:4]))
+            line_item = xbmcgui.ListItem('[B]%s[/B] [I]#%s[/I]' % (item['name'], item['claim_id'][0:4]))
             line_item.setProperty('IsFolder','true')
             if 'thumbnail' in item['value'] and 'url' in item['value']['thumbnail']:
                 line_item.setArt({
@@ -240,24 +240,26 @@ def select_user_channel():
 
 @plugin.route('/')
 def lbry_root():
-    addDirectoryItem(ph, plugin.url_for(plugin_recent, page=1), ListItem(get_string(30218)), True)
-    addDirectoryItem(ph, plugin.url_for(plugin_follows), ListItem(get_string(30200)), True)
-    #addDirectoryItem(ph, plugin.url_for(plugin_playlists), ListItem(get_string(30210)), True)
-    addDirectoryItem(ph, plugin.url_for(plugin_playlist, name=quote_plus(get_string(30211))), ListItem(get_string(30211)), True)
+    addDirectoryItem(ph, plugin.url_for(plugin_recent, page=1), xbmcgui.ListItem(get_string(30218)), True)
+    addDirectoryItem(ph, plugin.url_for(plugin_follows), xbmcgui.ListItem(get_string(30200)), True)
+    #addDirectoryItem(ph, plugin.url_for(plugin_playlists), xbmcgui.ListItem(get_string(30210)), True)
+    addDirectoryItem(ph, plugin.url_for(plugin_playlist, name=quote_plus(get_string(30211))), xbmcgui.ListItem(get_string(30211)), True)
     #addDirectoryItem(ph, plugin.url_for(lbry_new, page=1), ListItem(get_string(30202)), True)
-    addDirectoryItem(ph, plugin.url_for(lbry_search), ListItem(get_string(137)), True)
+    addDirectoryItem(ph, plugin.url_for(lbry_search), xbmcgui.ListItem(get_string(137)), True)
 
     wallet_balance = get_wallet_balance()
 
     if wallet_balance is not False:
-        addDirectoryItem(ph, '', ListItem('Wallet: ' + wallet_balance), True)
+        addDirectoryItem(ph, plugin.url_for(lbry_root), xbmcgui.ListItem('Wallet: ' + wallet_balance), False)
 
-    addDirectoryItem(ph, plugin.url_for(settings), ListItem(get_string(5)), True)
+    addDirectoryItem(ph, plugin.url_for(show_rewards), xbmcgui.ListItem('Rewards'), True)
+
+    addDirectoryItem(ph, plugin.url_for(settings), xbmcgui.ListItem(get_string(5)), True)
     endOfDirectory(ph)
 
 #@plugin.route('/playlists')
 #def plugin_playlists():
-#    addDirectoryItem(ph, plugin.url_for(plugin_playlist, name=quote_plus(get_string(30211))), ListItem(get_string(30211)), True)
+#    addDirectoryItem(ph, plugin.url_for(plugin_playlist, name=quote_plus(get_string(30211))), xbmcgui.ListItem(get_string(30211)), True)
 #    endOfDirectory(ph)
 
 @plugin.route('/playlist/list/<name>')
@@ -301,7 +303,7 @@ def plugin_follows():
     for (name,claim_id) in channels:
         uri = name+'#'+claim_id
         channel_info = channel_infos[uri]
-        li = ListItem(name)
+        list_item = xbmcgui.ListItem(name)
         if not 'error' in channel_info:
             plot = ''
             if 'title' in channel_info['value'] and channel_info['value']['title'].strip() != '':
@@ -310,13 +312,13 @@ def plugin_follows():
                 plot = '[B]%s[/B]\n' % channel_info['name']
             if 'description' in channel_info['value']:
                 plot = plot + channel_info['value']['description']
-            infoLabels = { 'plot': plot }
-            item_set_info( li, infoLabels )
+            info_labels = { 'plot': plot }
+            item_set_info( list_item, info_labels )
 
             thumbnail_url = channel_info.get('value', {}).get('thumbnail',{}).get('url', '')
             cover_url = channel_info.get('value', {}).get('cover',{}).get('url', thumbnail_url)
 
-            li.setArt({
+            list_item.setArt({
                 'thumb': thumbnail_url,
                 'poster': thumbnail_url,
                 'fanart': cover_url,
@@ -325,8 +327,8 @@ def plugin_follows():
         menu.append((
             get_string(30206) % name, 'RunPlugin(%s)' % plugin.url_for(plugin_unfollow, uri=serialize_uri(uri))
         ))
-        li.addContextMenuItems(menu)
-        addDirectoryItem(ph, plugin.url_for(lbry_channel, uri=serialize_uri(uri), page=1), li, True)
+        list_item.addContextMenuItems(menu)
+        addDirectoryItem(ph, plugin.url_for(lbry_channel, uri=serialize_uri(uri), page=1), list_item, True)
     endOfDirectory(ph)
 
 @plugin.route('/recent/<page>')
@@ -344,7 +346,7 @@ def plugin_recent(page):
     addDirectoryItems(ph, items, result['page_size'])
     total_pages = int(result['total_pages'])
     if total_pages > 1 and page < total_pages:
-        addDirectoryItem(ph, plugin.url_for(plugin_recent, page=page+1), ListItem(get_string(30203)), True)
+        addDirectoryItem(ph, plugin.url_for(plugin_recent, page=page+1), xbmcgui.ListItem(get_string(30203)), True)
     endOfDirectory(ph)
 
 @plugin.route('/comments/show/<uri>')
@@ -381,7 +383,7 @@ def lbry_new(page):
     addDirectoryItems(ph, items, result['page_size'])
     total_pages = int(result['total_pages'])
     if total_pages > 1 and page < total_pages:
-        addDirectoryItem(ph, plugin.url_for(lbry_new, page=page+1), ListItem(get_string(30203)), True)
+        addDirectoryItem(ph, plugin.url_for(lbry_new, page=page+1), xbmcgui.ListItem(get_string(30203)), True)
     endOfDirectory(ph)
 
 @plugin.route('/channel/<uri>')
@@ -400,7 +402,7 @@ def lbry_channel(uri,page):
     addDirectoryItems(ph, items, result['page_size'])
     total_pages = int(result['total_pages'])
     if total_pages > 1 and page < total_pages:
-        addDirectoryItem(ph, plugin.url_for(lbry_channel, uri=serialize_uri(uri), page=page+1), ListItem(get_string(30203)), True)
+        addDirectoryItem(ph, plugin.url_for(lbry_channel, uri=serialize_uri(uri), page=page+1), xbmcgui.ListItem(get_string(30203)), True)
     endOfDirectory(ph)
 
 @plugin.route('/search')
@@ -427,10 +429,33 @@ def lbry_search_pager(query, page):
         addDirectoryItems(ph, items, result['page_size'])
         total_pages = int(result['total_pages'])
         if total_pages > 1 and page < total_pages:
-            addDirectoryItem(ph, plugin.url_for(lbry_search_pager, query=quote_plus(query), page=page+1), ListItem(get_string(30203)), True)
+            addDirectoryItem(ph, plugin.url_for(lbry_search_pager, query=quote_plus(query), page=page+1), xbmcgui.ListItem(get_string(30203)), True)
         endOfDirectory(ph)
     else:
         endOfDirectory(ph, False)
+
+@plugin.route('/rewards')
+def show_rewards():
+
+    """ Shows rewards """
+    import json
+    rewards = ODYSEE.reward_list()
+    xbmc.log( json.dumps( rewards ), xbmc.LOGWARNING )
+
+    current_url = plugin.url_for(show_rewards)
+
+    if rewards:
+        for reward in reversed(rewards):
+            xbmc.log( json.dumps( reward ), xbmc.LOGWARNING )
+
+            reward_title = reward[ 'reward_title' ] + ': ' + str( reward[ 'reward_amount' ] )
+
+            if reward[ 'id' ] > 0:
+                reward_title += ' (Claimed ' + reward[ 'created_at' ].replace( 'T', ' ' ).replace( 'Z', '' ) + ')'
+
+            addDirectoryItem(ph, current_url, xbmcgui.ListItem( reward_title ), False)
+
+    endOfDirectory(ph)
 
 def user_payment_confirmed(claim_info):
     # paid for claim already?
@@ -470,9 +495,9 @@ def claim_play(uri):
     if ADDON.getSetting('useHTTP') == 'true':
         stream_url = stream_url.replace('https://', 'http://', 1) + get_stream_headers()
 
-    (url,li) = result_to_itemlist([claim_info])[0]
-    li.setPath(stream_url)
-    setResolvedUrl(ph, True, li)
+    (url, list_item) = result_to_itemlist([claim_info])[0]
+    list_item.setPath(stream_url)
+    setResolvedUrl(ph, True, list_item)
 
 @plugin.route('/download/<uri>')
 def claim_download(uri):
