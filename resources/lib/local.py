@@ -22,6 +22,9 @@ def get_stream_headers():
     return ''
 
 def load_channel_subs():
+
+    """ Loads channel's Subs from file """
+
     channels = []
     try:
         f = xbmcvfs.File(get_profile_path('channel_subs'), 'r')
@@ -38,6 +41,9 @@ def load_channel_subs():
     return channels
 
 def add_channel_sub(uri):
+
+    """ Add channel sub to file """
+
     uri = deserialize_uri(uri)
     channels = load_channel_subs()
     channel = (uri.split('#')[0],uri.split('#')[1])
@@ -46,12 +52,18 @@ def add_channel_sub(uri):
     save_channel_subs(channels)
 
 def remove_channel_sub(uri):
+
+    """ Remove channel sub to file """
+
     uri = deserialize_uri(uri)
     channels = load_channel_subs()
     channels.remove((uri.split('#')[0],uri.split('#')[1]))
     save_channel_subs(channels)
 
 def save_channel_subs(channels):
+
+    """ Saves channel's sub to file """
+
     try:
         with xbmcvfs.File(get_profile_path('channel_subs'), 'w') as f:
             for (name, claim_id) in channels:
@@ -63,6 +75,9 @@ def save_channel_subs(channels):
         xbmcgui.Dialog().notification(get_string(30104), str(err), xbmcgui.NOTIFICATION_ERROR)
 
 def load_playlist(name):
+
+    """ Loads playlist """
+
     items = []
     try:
         with xbmcvfs.File(get_profile_path(name + '.list'), 'r') as f:
@@ -76,6 +91,9 @@ def load_playlist(name):
     return items
 
 def save_playlist(name, items):
+
+    """ Saves playlist """
+
     try:
         with xbmcvfs.File(get_profile_path(name + '.list'), 'w') as f:
             for item in items:

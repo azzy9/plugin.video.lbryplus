@@ -11,7 +11,7 @@ from resources.lib.general import *
 
 ADDON = xbmcaddon.Addon()
 
-odysee = odysee()
+ODYSEE = Odysee()
 
 def get_profile_path(rpath):
 
@@ -23,8 +23,8 @@ def get_additional_header():
 
     """ Gets header with token if user is signed in """
 
-    if odysee.has_login_details() and odysee.signed_in:
-        return {'x-lbry-auth-token': odysee.auth_token}
+    if ODYSEE.has_login_details() and ODYSEE.signed_in:
+        return {'x-lbry-auth-token': ODYSEE.auth_token}
     return {}
 
 def get_stream_headers():
@@ -38,7 +38,7 @@ def load_channel_subs():
     """ Gets Followed channels from Odysee """
 
     channels = []
-    if odysee.has_login_details() and odysee.signed_in:
+    if ODYSEE.has_login_details() and ODYSEE.signed_in:
 
         subscriptions = call_rpc(
             'preference_get', {}, additional_headers=get_additional_header()
@@ -60,7 +60,7 @@ def add_channel_sub(uri):
     channel_name = uri.split('#')[0]
     claim_id = uri.split('#')[1]
 
-    odysee.subscription_new(channel_name, claim_id)
+    ODYSEE.subscription_new(channel_name, claim_id)
 
 def remove_channel_sub(uri):
 
@@ -69,9 +69,12 @@ def remove_channel_sub(uri):
     uri = deserialize_uri(uri)
     claim_id = uri.split('#')[1]
 
-    odysee.subscription_delete(claim_id)
+    ODYSEE.subscription_delete(claim_id)
 
 def load_playlist(name):
+
+    """ Loads playlist """
+
     items = []
     try:
         with xbmcvfs.File(get_profile_path(name + '.list'), 'r') as f:
@@ -85,6 +88,9 @@ def load_playlist(name):
     return items
 
 def save_playlist(name, items):
+
+    """ Saves playlist """
+
     try:
         with xbmcvfs.File(get_profile_path(name + '.list'), 'w') as f:
             for item in items:
@@ -93,25 +99,41 @@ def save_playlist(name, items):
     except Exception as err:
         xbmcgui.Dialog().notification(get_string(30104), str(err), xbmcgui.NOTIFICATION_ERROR)
 
+def get_wallet_address():
+
+    """ gets wallet address for Odysee """
+
+    wallet_address = False
+
+    if ODYSEE.has_login_details() and ODYSEE.signed_in:
+
+        wallet_address = call_rpc(
+            'address_unused',
+            {},
+            additional_headers=get_additional_header()
+        )[ 'result' ]
+
+    return wallet_address
+
 def odysee_init():
 
     """ Initiate Odysee Login """
 
     # check if we have a new login
-    if odysee.has_login_details() and not odysee.auth_token:
-        odysee.user_new()
+    if ODYSEE.has_login_details() and not ODYSEE.auth_token:
+        ODYSEE.user_new()
 
     # checks if the odysee user is still logged in
-    if odysee.has_login_details() and odysee.auth_token and odysee.signed_in:
-        if not odysee.user_me():
-            odysee.signed_in = 'False'
-            ADDON.setSetting( 'signed_in', odysee.signed_in )
+    if ODYSEE.has_login_details() and ODYSEE.auth_token and ODYSEE.signed_in:
+        if not ODYSEE.user_me():
+            ODYSEE.signed_in = 'False'
+            ADDON.setSetting( 'signed_in', ODYSEE.signed_in )
 
     # Try to login
-    if odysee.has_login_details() and odysee.auth_token and not odysee.signed_in:
-        if odysee.user_signin():
-            odysee.signed_in = 'True'
-            ADDON.setSetting( 'signed_in', odysee.signed_in )
+    if ODYSEE.has_login_details() and ODYSEE.auth_token and not ODYSEE.signed_in:
+        if ODYSEE.user_signin():
+            ODYSEE.signed_in = 'True'
+            ADDON.setSetting( 'signed_in', ODYSEE.signed_in )
         else:
             raise Exception('Unable to Login')
 

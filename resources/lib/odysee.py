@@ -8,7 +8,7 @@ from resources.lib.general import *
 
 ADDON = xbmcaddon.Addon()
 
-class odysee:
+class Odysee:
 
     API_URL = 'https://api.odysee.com'
 
@@ -143,6 +143,34 @@ class odysee:
         if result and result[ 'success' ]:
             return result[ 'data' ]
         return {}
+
+    def reward_claim( self, reward_type, wallet_address, claim_code ):
+
+        """ Claim a reward """
+
+        if reward_type and wallet_address and claim_code:
+            data = {
+                'auth_token': self.auth_token,
+                'reward_type': reward_type,
+                'wallet_address': wallet_address,
+                'claim_code': claim_code,
+            }
+            result = request_get( self.API_URL + '/reward/claim', data=data )
+            return result and result[ 'success' ]
+        return False
+
+    def reward_list( self ):
+
+        """ Lists rewards """
+
+        data = {
+            'auth_token': self.auth_token,
+            'multiple_rewards_per_type': 'true',
+        }
+        result = request_get( self.API_URL + '/reward/list', data=data )
+        if result and result[ 'success' ]:
+            return result[ 'data' ]
+        return False
 
     def generate_id( self, num_bytes = 64 ):
 

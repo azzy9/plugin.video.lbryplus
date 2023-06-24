@@ -12,7 +12,7 @@ import time
 from urllib.parse import quote, unquote, quote_plus, unquote_plus
 
 from resources.lib.exception import *
-from resources.lib.comments import CommentWindow
+from resources.lib.comments import CommentWindow, using_lbry_proxy
 
 ADDON = xbmcaddon.Addon()
 
@@ -39,30 +39,31 @@ setContent(ph, 'videos')
 dialog = Dialog()
 
 def to_video_listitem(item, playlist='', channel='', repost=None):
-    li = ListItem(item['value']['title'] if 'title' in item['value'] else item['file_name'] if 'file_name' in item else '')
-    li.setProperty('IsPlayable', 'true')
+
+    line_item = ListItem(item['value']['title'] if 'title' in item['value'] else item['file_name'] if 'file_name' in item else '')
+    line_item.setProperty('IsPlayable', 'true')
     if 'thumbnail' in item['value'] and 'url' in item['value']['thumbnail']:
-        li.setArt({
+        line_item.setArt({
             'thumb': item['value']['thumbnail']['url'],
             'poster': item['value']['thumbnail']['url'],
             'fanart': item['value']['thumbnail']['url']
         })
 
-    infoLabels = {}
+    info_labels = {}
     menu = []
     plot = ''
     if 'description' in item['value']:
         plot = item['value']['description']
     if 'author' in item['value']:
-        infoLabels['writer'] = item['value']['author']
+        info_labels['writer'] = item['value']['author']
     elif 'channel_name' in item:
-        infoLabels['writer'] = item['channel_name']
+        info_labels['writer'] = item['channel_name']
     if 'timestamp' in item:
         timestamp = time.localtime(item['timestamp'])
-        infoLabels['year'] = timestamp.tm_year
-        infoLabels['premiered'] = time.strftime('%Y-%m-%d',timestamp)
+        info_labels['year'] = timestamp.tm_year
+        info_labels['premiered'] = time.strftime('%Y-%m-%d',timestamp)
     if 'video' in item['value'] and 'duration' in item['value']['video']:
-        infoLabels['duration'] = str(item['value']['video']['duration'])
+        info_labels['duration'] = str(item['value']['video']['duration'])
 
     if playlist == '':
         if 'signing_channel' in item and 'name' in item['signing_channel']:
@@ -92,7 +93,7 @@ def to_video_listitem(item, playlist='', channel='', repost=None):
 
         plot = '[B]' + (ch_title if ch_title.strip() != '' else ch_name) + '[/B]\n' + plot
 
-        infoLabels['studio'] = ch_name
+        info_labels['studio'] = ch_name
 
         if channel == '':
             menu.append((
@@ -108,14 +109,16 @@ def to_video_listitem(item, playlist='', channel='', repost=None):
         else:
             plot = ('[COLOR yellow]%s[/COLOR]\n' % get_string(30216)) + plot
 
-    infoLabels['plot'] = plot
-    item_set_info( li, infoLabels )
-    li.addContextMenuItems(menu)
+    info_labels['plot'] = plot
+    item_set_info( line_item, info_labels )
+    line_item.addContextMenuItems(menu)
 
-    return li
+    return line_item
 
 def result_to_itemlist(result, playlist='', channel=''):
+
     items = []
+
     for item in result:
         if not 'value_type' in item:
             xbmc.log(str(item))
@@ -126,10 +129,10 @@ def result_to_itemlist(result, playlist='', channel=''):
                 if 'mature' in item['value']['tags'] and not nsfw:
                     continue
 
-            li = to_video_listitem(item, playlist, channel)
+            line_item = to_video_listitem(item, playlist, channel)
             url = plugin.url_for(claim_play, uri=serialize_uri(item))
 
-            items.append((url, li))
+            items.append((url, line_item))
         elif item['value_type'] == 'repost' and 'reposted_claim' in item and item['reposted_claim']['value_type'] == 'stream' and item['reposted_claim']['value']['stream_type'] == 'video':
             stream_item = item['reposted_claim']
             # nsfw?
@@ -137,15 +140,15 @@ def result_to_itemlist(result, playlist='', channel=''):
                 if 'mature' in stream_item['value']['tags'] and not nsfw:
                     continue
 
-            li = to_video_listitem(stream_item, playlist, channel, repost=item)
+            line_item = to_video_listitem(stream_item, playlist, channel, repost=item)
             url = plugin.url_for(claim_play, uri=serialize_uri(stream_item))
 
-            items.append((url, li))
+            items.append((url, line_item))
         elif item['value_type'] == 'channel':
-            li = ListItem('[B]%s[/B] [I]#%s[/I]' % (item['name'], item['claim_id'][0:4]))
-            li.setProperty('IsFolder','true')
+            line_item = ListItem('[B]%s[/B] [I]#%s[/I]' % (item['name'], item['claim_id'][0:4]))
+            line_item.setProperty('IsFolder','true')
             if 'thumbnail' in item['value'] and 'url' in item['value']['thumbnail']:
-                li.setArt({
+                line_item.setArt({
                     'thumb': item['value']['thumbnail']['url'],
                     'poster': item['value']['thumbnail']['url'],
                     'fanart': item['value']['thumbnail']['url']
@@ -157,9 +160,9 @@ def result_to_itemlist(result, playlist='', channel=''):
             menu.append((
                 get_string(30205) % ch_name, 'RunPlugin(%s)' % plugin.url_for(plugin_follow, uri=serialize_uri(item))
             ))
-            li.addContextMenuItems(menu)
+            line_item.addContextMenuItems(menu)
 
-            items.append((url, li, True))
+            items.append((url, line_item, True))
         else:
             xbmc.log('ignored item, value_type=' + item['value_type'])
             xbmc.log('item name=' + item['name'])
