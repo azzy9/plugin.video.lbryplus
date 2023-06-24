@@ -115,6 +115,22 @@ def get_wallet_address():
 
     return wallet_address
 
+def get_wallet_balance():
+
+    """ gets wallet balance for Odysee """
+
+    wallet_balance = False
+
+    if ODYSEE.has_login_details() and ODYSEE.signed_in:
+
+        wallet_balance = call_rpc(
+            'wallet_balance',
+            {},
+            additional_headers=get_additional_header()
+        )[ 'available' ]
+
+    return wallet_balance
+
 def odysee_init():
 
     """ Initiate Odysee Login """

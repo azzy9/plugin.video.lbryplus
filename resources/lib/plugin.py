@@ -246,6 +246,12 @@ def lbry_root():
     addDirectoryItem(ph, plugin.url_for(plugin_playlist, name=quote_plus(get_string(30211))), ListItem(get_string(30211)), True)
     #addDirectoryItem(ph, plugin.url_for(lbry_new, page=1), ListItem(get_string(30202)), True)
     addDirectoryItem(ph, plugin.url_for(lbry_search), ListItem(get_string(137)), True)
+
+    wallet_balance = get_wallet_balance()
+
+    if wallet_balance is not False:
+        addDirectoryItem(ph, '', ListItem('Wallet: ' + wallet_balance), True)
+
     addDirectoryItem(ph, plugin.url_for(settings), ListItem(get_string(5)), True)
     endOfDirectory(ph)
 
