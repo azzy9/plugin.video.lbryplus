@@ -249,9 +249,9 @@ def lbry_root():
     #addDirectoryItem(ph, plugin.url_for(lbry_new, page=1), ListItem(get_string(30202)), True)
     addDirectoryItem(ph, plugin.url_for(lbry_search), xbmcgui.ListItem(get_string(137)), True)
 
-    wallet_balance = get_wallet_balance()
-
     if ODYSEE_ENABLED:
+
+        wallet_balance = get_wallet_balance()
 
         if wallet_balance is not False:
             addDirectoryItem(ph, plugin.url_for(lbry_root), xbmcgui.ListItem('Wallet: ' + wallet_balance), False)
