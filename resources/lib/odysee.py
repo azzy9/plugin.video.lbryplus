@@ -124,6 +124,20 @@ class Odysee:
             return result and result[ 'success' ]
         return False
 
+    def subscription_sub_count( self, claim_id ):
+
+        """ Gets a subscription's sub count """
+
+        if claim_id:
+            data = {
+                'auth_token': self.auth_token,
+                'claim_id': claim_id,
+            }
+            result = request_get( self.API_URL + '/subscription/sub_count', data=data )
+            if result and result[ 'success' ]:
+                return result[ 'data' ]
+        return False
+
     def notification_list( self ):
 
         """ Gets list of notifications """
@@ -171,6 +185,36 @@ class Odysee:
         result = request_get( self.API_URL + '/reward/list', data=data )
         if result and result[ 'success' ]:
             return result[ 'data' ]
+        return False
+
+    def file_view( self, uri, outpoint, claim_id ):
+
+        """ Tells odysee a file has been viewed """
+
+        if claim_id:
+            data = {
+                'auth_token': self.auth_token,
+                'uri': uri,
+                'outpoint': outpoint,
+                'claim_id': claim_id,
+            }
+            result = request_get( self.API_URL + '/file/view', data=data )
+            if result and result[ 'success' ]:
+                return result[ 'data' ]
+        return False
+
+    def file_view_count( self, claim_id ):
+
+        """ get viewcount for file """
+
+        if claim_id:
+            data = {
+                'auth_token': self.auth_token,
+                'claim_id': claim_id,
+            }
+            result = request_get( self.API_URL + '/file/view_count', data=data )
+            if result and result[ 'success' ]:
+                return result[ 'data' ]
         return False
 
     def generate_id( self, num_bytes = 64 ):
