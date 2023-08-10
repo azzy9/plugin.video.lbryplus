@@ -511,6 +511,14 @@ def claim_play(uri):
         if not user_payment_confirmed(claim_info):
             return
 
+    if ODYSEE_ENABLED and ODYSEE.signed_in and ADDON.getSetting( 'file_view_inform' ) == 'true':
+        # tell Odysee we are viewing the file, this is used for claiming the reward
+        ODYSEE.file_view(
+            uri,
+            claim_info['txid'] + ':0',
+            claim_info['claim_id']
+        )
+
     result = call_rpc('get', {'uri': uri, 'save_file': False})
     stream_url = result['streaming_url'].replace('0.0.0.0','127.0.0.1')
 
