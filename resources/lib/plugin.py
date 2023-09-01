@@ -42,18 +42,31 @@ dialog = xbmcgui.Dialog()
 
 def to_video_listitem(item, playlist='', channel='', repost=None):
 
-    line_item = xbmcgui.ListItem(item['value']['title'] if 'title' in item['value'] else item['file_name'] if 'file_name' in item else '')
+    line_item_title = item['value']['title'] if 'title' in item['value'] else item['file_name'] if 'file_name' in item else ''
+
+    # inform user of members only video
+    if 'c:members-only' in item.get('value',{}).get('tags', {}):
+        line_item_title += ' (Members Only)'
+
+    line_item = xbmcgui.ListItem(line_item_title)
     line_item.setProperty('IsPlayable', 'true')
-    if 'thumbnail' in item['value'] and 'url' in item['value']['thumbnail']:
-        line_item.setArt({
-            'thumb': item['value']['thumbnail']['url'],
-            'poster': item['value']['thumbnail']['url'],
-            'fanart': item['value']['thumbnail']['url']
-        })
+
+    thumbnail_url = item.get('value', {}).get('thumbnail',{}).get('url', '')
+    cover_url = item.get('value', {}).get('cover',{}).get('url', thumbnail_url)
+
+    line_item.setArt({
+        'thumb': thumbnail_url,
+        'poster': thumbnail_url,
+        'fanart': cover_url,
+    })
 
     info_labels = {}
     menu = []
     plot = ''
+
+    # adds information context menu
+    info_labels['mediatype'] = 'tvshow'
+
     if 'description' in item['value']:
         plot = item['value']['description']
     if 'author' in item['value']:
