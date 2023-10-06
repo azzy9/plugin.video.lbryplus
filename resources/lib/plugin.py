@@ -40,6 +40,18 @@ ph = plugin.handle
 setContent(ph, 'videos')
 dialog = xbmcgui.Dialog()
 
+def thumbnails_get(item):
+
+    """ gets and sanitises thumbnails """
+
+    thumbnail_url = item.get('value', {}).get('thumbnail',{}).get('url', '')
+    cover_url = item.get('value', {}).get('cover',{}).get('url', thumbnail_url)
+
+    #thumbnail_url = 'https://' + thumbnail_url.rsplit('https://', 1)[-1] or thumbnail_url
+    #cover_url = 'https://' + cover_url.rsplit('https://', 1)[-1] or cover_url
+
+    return { 'thumbnail': thumbnail_url, 'cover': cover_url }
+
 def to_video_listitem(item, playlist='', channel='', repost=None):
 
     line_item_title = item['value']['title'] if 'title' in item['value'] else item['file_name'] if 'file_name' in item else ''
@@ -51,13 +63,12 @@ def to_video_listitem(item, playlist='', channel='', repost=None):
     line_item = xbmcgui.ListItem(line_item_title)
     line_item.setProperty('IsPlayable', 'true')
 
-    thumbnail_url = item.get('value', {}).get('thumbnail',{}).get('url', '')
-    cover_url = item.get('value', {}).get('cover',{}).get('url', thumbnail_url)
+    thumbnails = thumbnails_get(item)
 
     line_item.setArt({
-        'thumb': thumbnail_url,
-        'poster': thumbnail_url,
-        'fanart': cover_url,
+        'thumb': thumbnails[ 'thumbnail' ],
+        'poster': thumbnails[ 'thumbnail' ],
+        'fanart': thumbnails[ 'cover' ],
     })
 
     info_labels = {}
@@ -162,12 +173,15 @@ def result_to_itemlist(result, playlist='', channel=''):
         elif item['value_type'] == 'channel':
             line_item = xbmcgui.ListItem('[B]%s[/B] [I]#%s[/I]' % (item['name'], item['claim_id'][0:4]))
             line_item.setProperty('IsFolder','true')
-            if 'thumbnail' in item['value'] and 'url' in item['value']['thumbnail']:
-                line_item.setArt({
-                    'thumb': item['value']['thumbnail']['url'],
-                    'poster': item['value']['thumbnail']['url'],
-                    'fanart': item['value']['thumbnail']['url']
-                })
+
+            thumbnails = thumbnails_get(item)
+
+            line_item.setArt({
+                'thumb': thumbnails[ 'thumbnail' ],
+                'poster': thumbnails[ 'thumbnail' ],
+                'fanart': thumbnails[ 'cover' ],
+            })
+
             url = plugin.url_for(lbry_channel, uri=serialize_uri(item),page=1)
 
             menu = []
@@ -333,13 +347,12 @@ def plugin_follows():
             info_labels = { 'plot': plot }
             item_set_info( list_item, info_labels )
 
-            thumbnail_url = channel_info.get('value', {}).get('thumbnail',{}).get('url', '')
-            cover_url = channel_info.get('value', {}).get('cover',{}).get('url', thumbnail_url)
+            thumbnails = thumbnails_get(channel_info)
 
             list_item.setArt({
-                'thumb': thumbnail_url,
-                'poster': thumbnail_url,
-                'fanart': cover_url,
+                'thumb': thumbnails[ 'thumbnail' ],
+                'poster': thumbnails[ 'thumbnail' ],
+                'fanart': thumbnails[ 'cover' ],
             })
         menu = []
         menu.append((
