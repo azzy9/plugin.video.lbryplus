@@ -11,6 +11,7 @@ ADDON = xbmcaddon.Addon()
 class Odysee:
 
     API_URL = 'https://api.odysee.com'
+    STREAM_URL = 'https://api.odysee.live'
 
     signed_in = ''
     email = ''
@@ -213,6 +214,29 @@ class Odysee:
                 'claim_id': claim_id,
             }
             result = request_get( self.API_URL + '/file/view_count', data=data )
+            if result and result[ 'success' ]:
+                return result[ 'data' ]
+        return False
+
+    def livestream_all( self ):
+
+        """ lists all live streams """
+
+        data = {}
+        result = request_get( self.STREAM_URL + '/livestream/all', data=data )
+        if result and result[ 'success' ]:
+            return result[ 'data' ]
+        return False
+
+    def livestream_is_live( self, claim_id ):
+
+        """ checks if livestream is live """
+
+        if claim_id:
+            data = {
+                'channel_claim_id': claim_id,
+            }
+            result = request_get( self.STREAM_URL + '/livestream/is_live', data=data )
             if result and result[ 'success' ]:
                 return result[ 'data' ]
         return False

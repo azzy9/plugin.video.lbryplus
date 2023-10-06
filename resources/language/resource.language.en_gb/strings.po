@@ -55,14 +55,10 @@ msgid "Password"
 msgstr ""
 
 msgctxt "#30010"
-msgid "Inform of File View"
-msgstr ""
-
-msgctxt "#30011"
 msgid "Debug"
 msgstr ""
 
-msgctxt "#30012"
+msgctxt "#30011"
 msgid "Use HTTP"
 msgstr ""
 
@@ -290,4 +286,8 @@ msgstr ""
 
 msgctxt "#30246"
 msgid "Login"
+msgstr ""
+
+msgctxt "#30247"
+msgid "Live Streams"
 msgstr ""

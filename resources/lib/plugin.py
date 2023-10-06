@@ -9,7 +9,7 @@ from xbmcplugin import addDirectoryItem, addDirectoryItems, endOfDirectory, setC
 import routing
 import time
 
-from urllib.parse import quote, quote_plus, unquote_plus
+from urllib.parse import quote, unquote, quote_plus, unquote_plus
 
 from resources.lib.exception import PluginException
 from resources.lib.comments import CommentWindow, using_lbry_proxy
@@ -271,6 +271,8 @@ def select_user_channel():
 def lbry_root():
     addDirectoryItem(ph, plugin.url_for(plugin_recent, page=1), xbmcgui.ListItem(get_string(30218)), True)
     addDirectoryItem(ph, plugin.url_for(plugin_follows), xbmcgui.ListItem(get_string(30200)), True)
+    if ODYSEE_ENABLED:
+        addDirectoryItem(ph, plugin.url_for(plugin_livestreams), xbmcgui.ListItem(get_string(30247)), True)
     #addDirectoryItem(ph, plugin.url_for(plugin_playlists), xbmcgui.ListItem(get_string(30210)), True)
     addDirectoryItem(ph, plugin.url_for(plugin_playlist, name=quote_plus(get_string(30211))), xbmcgui.ListItem(get_string(30211)), True)
     #addDirectoryItem(ph, plugin.url_for(lbry_new, page=1), ListItem(get_string(30202)), True)
@@ -360,6 +362,30 @@ def plugin_follows():
         ))
         list_item.addContextMenuItems(menu)
         addDirectoryItem(ph, plugin.url_for(lbry_channel, uri=serialize_uri(uri), page=1), list_item, True)
+    endOfDirectory(ph)
+
+@plugin.route('/livestreams')
+def plugin_livestreams():
+
+    livestreams = ODYSEE.livestream_all()
+
+    if livestreams:
+        urls = []
+        for stream in livestreams:
+            if stream['ActiveClaim']['CanonicalURL']:
+                urls.append(stream['ActiveClaim']['CanonicalURL'])
+        claim_info = call_rpc('resolve', {'urls': urls})
+
+        for stream in livestreams:
+            info = claim_info.get( stream['ActiveClaim']['CanonicalURL'], {} )
+            list_item = xbmcgui.ListItem( info.get('value', {}).get('title', '') + ' (' + str( stream['ViewerCount'] ) + ')' )
+            thumbnail = info.get( 'value', {} ).get('thumbnail', {}).get('url', stream[ 'ThumbnailURL' ])
+            list_item.setArt({
+                'thumb': thumbnail,
+                'poster': thumbnail,
+                'fanart': thumbnail,
+            })
+            addDirectoryItem(ph, plugin.url_for(play_video, uri=quote(stream['VideoURL'].replace('master.','720.'), safe='')), list_item)
     endOfDirectory(ph)
 
 @plugin.route('/recent/<page>')
@@ -555,6 +581,22 @@ def claim_play(uri):
     (url, list_item) = result_to_itemlist([claim_info])[0]
     list_item.setPath(stream_url)
     setResolvedUrl(ph, True, list_item)
+
+@plugin.route('/play/video/<uri>')
+def play_video(uri):
+    stream_url = unquote(uri)
+
+    # Use HTTP
+    if ADDON.getSetting('useHTTP') == 'true':
+        stream_url = stream_url.replace('https://', 'http://', 1) + get_stream_headers()
+
+    list_item = xbmcgui.ListItem(stream_url)
+    list_item.setPath(stream_url)
+
+    if '.m3u8' in stream_url:
+        xbmc.Player().play(stream_url, list_item)
+    else:
+        setResolvedUrl(ph, True, list_item)
 
 @plugin.route('/download/<uri>')
 def claim_download(uri):
