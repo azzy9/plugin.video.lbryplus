@@ -55,10 +55,14 @@ msgid "Password"
 msgstr ""
 
 msgctxt "#30010"
-msgid "Debug"
+msgid "Inform of File View"
 msgstr ""
 
 msgctxt "#30011"
+msgid "Debug"
+msgstr ""
+
+msgctxt "#30012"
 msgid "Use HTTP"
 msgstr ""
 
