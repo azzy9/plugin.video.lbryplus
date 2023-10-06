@@ -385,7 +385,7 @@ def plugin_livestreams():
                 'poster': thumbnail,
                 'fanart': thumbnail,
             })
-            addDirectoryItem(ph, plugin.url_for(play_video, uri=quote(stream['VideoURL'].replace('master.','720.'), safe='')), list_item)
+            addDirectoryItem(ph, plugin.url_for(play_video, uri=quote(stream['VideoURL'].replace('master.','live.'), safe='')), list_item)
     endOfDirectory(ph)
 
 @plugin.route('/recent/<page>')
