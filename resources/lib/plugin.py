@@ -9,7 +9,7 @@ from xbmcplugin import addDirectoryItem, addDirectoryItems, endOfDirectory, setC
 import routing
 import time
 
-from urllib.parse import quote, unquote, quote_plus, unquote_plus
+from six.moves.urllib.parse import quote, unquote, quote_plus, unquote_plus
 
 from resources.lib.exception import PluginException
 from resources.lib.comments import CommentWindow, using_lbry_proxy

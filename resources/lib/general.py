@@ -11,7 +11,7 @@ import requests
 
 import six
 
-from urllib.parse import quote, unquote, quote_plus,unquote_plus
+from six.moves.urllib.parse import quote, unquote, quote_plus, unquote_plus
 
 from resources.lib.exception import *
 
@@ -121,8 +121,8 @@ def serialize_uri(item):
     """ all uris passed via kodi's routing system must be urlquoted """
 
     if type(item) is dict:
-        return quote(item['name'] + '#' + item['claim_id'])
-    return quote(item)
+        item = item['name'] + '#' + item['claim_id']
+    return quote(six.ensure_str(item))
 
 def deserialize_uri(item):
 
