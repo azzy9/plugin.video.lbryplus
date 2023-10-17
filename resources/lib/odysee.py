@@ -241,6 +241,19 @@ class Odysee:
                 return result[ 'data' ]
         return False
 
+    def livestream_subscribed( self, claim_ids ):
+
+        """ checks subscribed livestreams """
+
+        if claim_ids:
+            data = {
+                'channel_claim_ids': claim_ids,
+            }
+            result = request_get( self.STREAM_URL + '/livestream/subscribed', data=data )
+            if result and result[ 'success' ]:
+                return result[ 'data' ]
+        return False
+
     def generate_id( self, num_bytes = 64 ):
 
         """ Generates ID - Try to base this upon the App """
