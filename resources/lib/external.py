@@ -33,23 +33,37 @@ def get_stream_headers():
 
     return '|Referer=https://odysee.com/'
 
+def get_preferences():
+
+    """ method to get preferences from Odysee """
+
+    preferences = {}
+
+    if ODYSEE.has_login_details() and ODYSEE.signed_in:
+
+        preferences = call_rpc(
+            'preference_get', {}, additional_headers=get_additional_header()
+        )
+
+    return preferences
+
 def load_channel_subs():
 
     """ Gets Followed channels from Odysee """
 
     channels = []
-    if ODYSEE.has_login_details() and ODYSEE.signed_in:
 
-        subscriptions = call_rpc(
-            'preference_get', {}, additional_headers=get_additional_header()
-        )[ 'shared' ][ 'value' ][ 'subscriptions' ]
+    subscriptions = get_preferences().get( 'shared', {} ).get( 'value', {} )\
+        .get( 'subscriptions', False )
 
+    if subscriptions:
         for uri in subscriptions:
             uri = uri.replace('lbry://', '')
             items = uri.split('#')
             if len(items) < 2:
                 continue
             channels.append((items[0],items[1]))
+
     return channels
 
 def add_channel_sub(uri):
@@ -71,33 +85,48 @@ def remove_channel_sub(uri):
 
     ODYSEE.subscription_delete(claim_id)
 
-def load_playlist(name):
+def load_playlist( name ):
 
-    """ Loads playlist """
+    """ Gets from playlist """
+
+    #TODO: ability to get from other Odysee playlists
 
     items = []
-    try:
-        with xbmcvfs.File(get_profile_path(name + '.list'), 'r') as f:
-            lines = f.readBytes()
-    except Exception:
-        pass
-    lines = lines.decode('utf-8')
-    for line in lines.split('\n'):
-        if line != '':
-            items.append(line)
+
+    playlist = get_preferences().get( 'shared', {} ).get( 'value', {} )\
+        .get( 'builtinCollections', {} ).get( 'watchlater', False )
+
+    if playlist and playlist.get( 'itemCount', 0 ) > 0:
+        for uri in playlist['items']:
+            items.append(uri)
+
     return items
 
-def save_playlist(name, items):
+def save_playlist( name, items ):
 
     """ Saves playlist """
 
-    try:
-        with xbmcvfs.File(get_profile_path(name + '.list'), 'w') as f:
-            for item in items:
-                f.write(bytearray(item.encode('utf-8')))
-                f.write('\n')
-    except Exception as err:
-        xbmcgui.Dialog().notification(get_string(30104), str(err), xbmcgui.NOTIFICATION_ERROR)
+    #TODO: ability to save to other Odysee playlists
+
+    preferences = get_preferences()
+
+    playlist = get_preferences().get( 'shared', {} ).get( 'value', {} )\
+        .get( 'builtinCollections', {} ).get( 'watchlater', False )
+
+    # make sure playlist exists first
+    if playlist:
+
+        preferences[ 'shared' ][ 'value' ][ 'builtinCollections' ][ 'watchlater' ][ 'itemCount' ] = len( items )
+        preferences[ 'shared' ][ 'value' ][ 'builtinCollections' ][ 'watchlater' ][ 'items' ] = items
+
+        if ODYSEE.has_login_details() and ODYSEE.signed_in:
+
+            preference_set = call_rpc(
+                'preference_set',
+                {'key':'shared', 'value': preferences[ 'shared' ] },
+                additional_headers=get_additional_header()
+            )
+
 
 def get_wallet_address():
 

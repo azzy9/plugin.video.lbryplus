@@ -269,6 +269,7 @@ def select_user_channel():
 
 @plugin.route('/')
 def lbry_root():
+
     addDirectoryItem(ph, plugin.url_for(plugin_recent, page=1), xbmcgui.ListItem(get_string(30218)), True)
     addDirectoryItem(ph, plugin.url_for(plugin_follows), xbmcgui.ListItem(get_string(30200)), True)
     if ODYSEE_ENABLED:
@@ -322,6 +323,10 @@ def plugin_playlist_del(name,uri):
     name = unquote_plus(name)
     uri = deserialize_uri(uri)
     items = load_playlist(name)
+
+    if not uri in items:
+        uri = 'lbry://' + uri
+
     items.remove(uri)
     save_playlist(name, items)
     xbmc.executebuiltin('Container.Refresh')
@@ -385,7 +390,7 @@ def plugin_livestreams():
                 'poster': thumbnail,
                 'fanart': thumbnail,
             })
-            addDirectoryItem(ph, plugin.url_for(play_video, uri=quote(stream['VideoURL'].replace('master.','live.'), safe='')), list_item)
+            addDirectoryItem(ph, plugin.url_for(play_livestream, uri=quote(stream['ActiveClaim']['CanonicalURL'], safe='')), list_item)
     endOfDirectory(ph)
 
 @plugin.route('/recent/<page>')
@@ -548,6 +553,9 @@ def user_payment_confirmed(claim_info):
 
 @plugin.route('/play/<uri>')
 def claim_play(uri):
+
+    """ Method to play video """
+
     uri = deserialize_uri(uri)
 
     claim_info = call_rpc('resolve', {'urls': uri})[uri]
@@ -582,21 +590,38 @@ def claim_play(uri):
     list_item.setPath(stream_url)
     setResolvedUrl(ph, True, list_item)
 
-@plugin.route('/play/video/<uri>')
-def play_video(uri):
-    stream_url = unquote(uri)
+@plugin.route('/play/livestream/<uri>')
+def play_livestream(uri):
 
-    # Use HTTP
-    if ADDON.getSetting('useHTTP') == 'true':
-        stream_url = stream_url.replace('https://', 'http://', 1) + get_stream_headers()
+    """ Method to play live livestream """
 
-    list_item = xbmcgui.ListItem(stream_url)
-    list_item.setPath(stream_url)
+    canonical_url = unquote(uri)
 
-    if '.m3u8' in stream_url:
-        xbmc.Player().play(stream_url, list_item)
-    else:
-        setResolvedUrl(ph, True, list_item)
+    if canonical_url:
+
+        claim_info = call_rpc('resolve', {'urls': [canonical_url]})
+        info = claim_info.get( canonical_url, {} )
+
+        stream = ODYSEE.livestream_is_live( info[ 'signing_channel' ][ 'claim_id' ] )
+
+        stream_url = stream['VideoURL'].replace('master.','live.')
+
+        # Use HTTP
+        if ADDON.getSetting('useHTTP') == 'true':
+            stream_url = stream_url.replace('https://', 'http://', 1) + get_stream_headers()
+
+        list_item = xbmcgui.ListItem( info.get('value', {}).get('title', '') )
+        thumbnail = info.get( 'value', {} ).get('thumbnail', {}).get('url', stream[ 'ThumbnailURL' ])
+        list_item.setArt({
+            'thumb': thumbnail,
+            'poster': thumbnail,
+            'fanart': thumbnail,
+        })
+
+        if '.m3u8' in stream_url:
+            xbmc.Player().play(stream_url, list_item)
+        else:
+            setResolvedUrl(ph, True, list_item)
 
 @plugin.route('/download/<uri>')
 def claim_download(uri):
@@ -619,9 +644,27 @@ def claim_download(uri):
 
 @plugin.route('/settings')
 def settings():
+
+    """ Method to open settings menu """
+
     ADDON.openSettings()
 
+@plugin.route('/session/reset')
+def session_reset():
+
+    """ Resets the Odysee session"""
+
+    if ODYSEE_ENABLED:
+        ADDON.setSetting( 'auth_token', '' )
+        ADDON.setSetting( 'signed_in', '' )
+        ADDON.setSetting( 'device_id', '' )
+        return True
+    return False
+
 def run():
+
+    """ Run the plugin """
+
     try:
         plugin.run()
     except PluginException as err:
