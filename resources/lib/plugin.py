@@ -661,6 +661,47 @@ def session_reset(notify):
     if notify == 'notify':
         dialog.notification('Session', 'Session has been reset', xbmcgui.NOTIFICATION_INFO)
 
+@plugin.route('/login/test')
+def login_test():
+
+    """ Method that resets session, then tests the login """
+
+    response_str = ''
+
+    session_reset(False)
+
+    if not ODYSEE_ENABLED:
+
+        response_str = 'Odysee not enabled - please save settings first before running'
+
+    else:
+
+        if ODYSEE.has_login_details():
+
+            ODYSEE.ensure_device_id()
+
+            if not ODYSEE.user_exists( ODYSEE.email ):
+                response_str = 'User does not exist?'
+            else:
+                if ODYSEE.user_new() == '':
+                    response_str = 'Unable to get auth token from Odysee'
+                else:
+                    if not ODYSEE.user_signin():
+                        response_str = 'Login Failed - Incorrect details?'
+                    else:
+                        response_str = 'Login Successful - Session has been set'
+                        ODYSEE.signed_in = 'True'
+                        ADDON.setSetting( 'signed_in', ODYSEE.signed_in )
+
+        else:
+            response_str = 'No details detected - please save login details first before running'
+
+    dialog.notification(
+        'Login Test',
+        response_str,
+        xbmcgui.NOTIFICATION_INFO
+    )
+
 def run():
 
     """ Run the plugin """

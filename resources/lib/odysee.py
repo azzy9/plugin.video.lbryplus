@@ -34,8 +34,12 @@ class Odysee:
         self.password = ADDON.getSetting( 'password' )
         self.auth_token = ADDON.getSetting( 'auth_token' )
         self.device_id = ADDON.getSetting( 'device_id' )
+        self.ensure_device_id()
 
-        # a device id is required
+    def ensure_device_id( self ):
+
+        """ ensures there is a device id as is required """
+
         if not self.device_id:
             self.device_id = self.generate_id().decode("utf-8")
             ADDON.setSetting( 'device_id', self.device_id )

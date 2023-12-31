@@ -6,6 +6,8 @@ import xbmcaddon
 import xbmcvfs
 import xbmcgui
 
+import routing
+
 from resources.lib.odysee import *
 from resources.lib.general import *
 
@@ -179,7 +181,7 @@ def odysee_init():
         if ODYSEE.user_signin():
             ODYSEE.signed_in = 'True'
             ADDON.setSetting( 'signed_in', ODYSEE.signed_in )
-        else:
-            raise Exception('Unable to Login')
 
-odysee_init()
+# we do not want to run on login_test due to flooding requests
+if not routing.Plugin().route_for( '/login/test' ):
+    odysee_init()
