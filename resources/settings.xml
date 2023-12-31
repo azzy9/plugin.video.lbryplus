@@ -16,7 +16,7 @@
     <setting id="odysee_enable" type="bool" label="30007" default="false"/>
     <setting id="email" label="30008" type="text" default=""/>
     <setting id="password" label="30009" type="text" option="hidden" default=""/>
-    <setting id="session_reset" label="Reset Session" type="action" action="RunPlugin(plugin://plugin.video.lbryplus/session/reset)"/>
+    <setting id="session_reset" label="Reset Session" type="action" action="RunPlugin(plugin://plugin.video.lbryplus/session/reset/notify)"/>
     <setting id="file_view_inform" type="bool" label="30010" default="false"/>
   </category>
   <category label="30011">

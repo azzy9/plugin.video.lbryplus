@@ -649,19 +649,18 @@ def settings():
 
     ADDON.openSettings()
 
-@plugin.route('/session/reset')
-def session_reset():
+@plugin.route('/session/reset/<notify>')
+def session_reset(notify):
 
-    """
-    Resets the Odysee session
-    Runs from settings
-    """
+    """ Resets the Odysee session """
 
     if ODYSEE_ENABLED:
         ADDON.setSetting( 'auth_token', '' )
         ADDON.setSetting( 'signed_in', '' )
         ADDON.setSetting( 'device_id', '' )
-    dialog.notification('Session', 'Session has been reset', xbmcgui.NOTIFICATION_INFO)
+
+    if notify == 'notify':
+        dialog.notification('Session', 'Session has been reset', xbmcgui.NOTIFICATION_INFO)
 
 def run():
 
