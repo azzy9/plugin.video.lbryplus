@@ -652,14 +652,16 @@ def settings():
 @plugin.route('/session/reset')
 def session_reset():
 
-    """ Resets the Odysee session"""
+    """
+    Resets the Odysee session
+    Runs from settings
+    """
 
     if ODYSEE_ENABLED:
         ADDON.setSetting( 'auth_token', '' )
         ADDON.setSetting( 'signed_in', '' )
         ADDON.setSetting( 'device_id', '' )
-        return True
-    return False
+    dialog.notification('Session', 'Session has been reset', xbmcgui.NOTIFICATION_INFO)
 
 def run():
 
