@@ -654,10 +654,9 @@ def session_reset(notify):
 
     """ Resets the Odysee session """
 
-    if ODYSEE_ENABLED:
-        ADDON.setSetting( 'auth_token', '' )
-        ADDON.setSetting( 'signed_in', '' )
-        ADDON.setSetting( 'device_id', '' )
+    ADDON.setSetting( 'auth_token', '' )
+    ADDON.setSetting( 'signed_in', '' )
+    ADDON.setSetting( 'device_id', '' )
 
     if notify == 'notify':
         dialog.notification('Session', 'Session has been reset', xbmcgui.NOTIFICATION_INFO)
