@@ -3,6 +3,7 @@ Main Odysee integration class
 Created by Azzy9
 """
 
+import xbmc
 import xbmcaddon
 from resources.lib.general import *
 
@@ -88,7 +89,11 @@ class Odysee:
                 'password': self.password,
             }
             result = request_get( self.API_URL + '/user/signin', data=data )
-            return result and result[ 'success' ]
+            if result:
+                if result[ 'success' ]:
+                    return True
+                else:
+                    xbmc.log( 'LBRY+ Login Fail > ' + result[ 'error' ], xbmc.LOGWARNING )
         return False
 
     def user_me( self ):
