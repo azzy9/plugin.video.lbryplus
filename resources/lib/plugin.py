@@ -416,6 +416,9 @@ def plugin_recent(page):
     if not ADDON.getSettingBool('server_filter_disable'):
         query['stream_types'] = ['video']
 
+    if ODYSEE_ENABLED:
+        query['not_tags'] = ['c:scheduled-livestream','c:scheduled:hide']
+
     result = call_rpc('claim_search', query)
     items = result_to_itemlist(result['items'])
     addDirectoryItems(ph, items, result['page_size'])
