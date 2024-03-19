@@ -369,6 +369,61 @@ def plugin_follows():
         addDirectoryItem(ph, plugin.url_for(lbry_channel, uri=serialize_uri(uri), page=1), list_item, True)
     endOfDirectory(ph)
 
+@plugin.route('/recent/<page>')
+def plugin_recent(page):
+
+    page = int(page)
+    channels = load_channel_subs()
+    channel_ids = []
+
+    for( name, claim_id ) in channels:
+        channel_ids.append(claim_id)
+
+    # first page we check and show current subscribed live streams
+    if page == 1:
+        if ODYSEE_ENABLED and \
+            ODYSEE.has_login_details() and \
+            ODYSEE.signed_in:
+
+            livestreams = ODYSEE.livestream_subscribed( channel_ids )
+
+            if livestreams:
+                urls = []
+                for stream in livestreams:
+                    if stream['ActiveClaim']['CanonicalURL']:
+                        urls.append(stream['ActiveClaim']['CanonicalURL'])
+                claim_info = call_rpc('resolve', {'urls': urls})
+
+                for stream in livestreams:
+                    if stream['Live']:
+                        info = claim_info.get( stream['ActiveClaim']['CanonicalURL'], {} )
+                        list_item = xbmcgui.ListItem( '[COLOR red](Live)[/COLOR] ' + info.get('value', {}).get('title', '') + ' (' + str( stream['ViewerCount'] ) + ')' )
+                        thumbnail = info.get( 'value', {} ).get('thumbnail', {}).get('url', stream[ 'ThumbnailURL' ])
+                        list_item.setArt({
+                            'thumb': thumbnail,
+                            'poster': thumbnail,
+                            'fanart': thumbnail,
+                        })
+                        addDirectoryItem(ph, plugin.url_for(play_livestream, uri=quote(stream['ActiveClaim']['CanonicalURL'], safe='')), list_item)
+
+    query = {
+        'page': page,
+        'page_size': items_per_page,
+        'order_by': 'release_time',
+        'channel_ids': channel_ids
+    }
+
+    if not ADDON.getSettingBool('server_filter_disable'):
+        query['stream_types'] = ['video']
+
+    result = call_rpc('claim_search', query)
+    items = result_to_itemlist(result['items'])
+    addDirectoryItems(ph, items, result['page_size'])
+    total_pages = int(result['total_pages'])
+    if total_pages > 1 and page < total_pages:
+        addDirectoryItem(ph, plugin.url_for(plugin_recent, page=page+1), xbmcgui.ListItem(get_string(30203)), True)
+    endOfDirectory(ph)
+
 @plugin.route('/livestreams')
 def plugin_livestreams():
 
@@ -391,24 +446,6 @@ def plugin_livestreams():
                 'fanart': thumbnail,
             })
             addDirectoryItem(ph, plugin.url_for(play_livestream, uri=quote(stream['ActiveClaim']['CanonicalURL'], safe='')), list_item)
-    endOfDirectory(ph)
-
-@plugin.route('/recent/<page>')
-def plugin_recent(page):
-    page = int(page)
-    channels = load_channel_subs()
-    channel_ids = []
-    for (name,claim_id) in channels:
-        channel_ids.append(claim_id)
-    query = {'page': page, 'page_size': items_per_page, 'order_by': 'release_time', 'channel_ids': channel_ids}
-    if not ADDON.getSettingBool('server_filter_disable'):
-        query['stream_types'] = ['video']
-    result = call_rpc('claim_search', query)
-    items = result_to_itemlist(result['items'])
-    addDirectoryItems(ph, items, result['page_size'])
-    total_pages = int(result['total_pages'])
-    if total_pages > 1 and page < total_pages:
-        addDirectoryItem(ph, plugin.url_for(plugin_recent, page=page+1), xbmcgui.ListItem(get_string(30203)), True)
     endOfDirectory(ph)
 
 @plugin.route('/comments/show/<uri>')

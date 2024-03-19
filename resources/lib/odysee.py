@@ -92,8 +92,7 @@ class Odysee:
             if result:
                 if result[ 'success' ]:
                     return True
-                else:
-                    xbmc.log( 'LBRY+ Login Fail > ' + result[ 'error' ], xbmc.LOGWARNING )
+                xbmc.log( 'LBRY+ Login Fail > ' + result[ 'error' ], xbmc.LOGWARNING )
         return False
 
     def user_me( self ):
@@ -256,7 +255,7 @@ class Odysee:
 
         if claim_ids:
             data = {
-                'channel_claim_ids': claim_ids,
+                'channel_claim_ids': ','.join( claim_ids ),
             }
             result = request_get( self.STREAM_URL + '/livestream/subscribed', data=data )
             if result and result[ 'success' ]:
