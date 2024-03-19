@@ -271,6 +271,8 @@ def select_user_channel():
 def lbry_root():
 
     addDirectoryItem(ph, plugin.url_for(plugin_recent, page=1), xbmcgui.ListItem(get_string(30218)), True)
+    if ODYSEE_ENABLED:
+        addDirectoryItem(ph, plugin.url_for(plugin_upcoming, page=1), xbmcgui.ListItem('Upcoming'), True)
     addDirectoryItem(ph, plugin.url_for(plugin_follows), xbmcgui.ListItem(get_string(30200)), True)
     if ODYSEE_ENABLED:
         addDirectoryItem(ph, plugin.url_for(plugin_livestreams), xbmcgui.ListItem(get_string(30247)), True)
@@ -425,6 +427,56 @@ def plugin_recent(page):
     total_pages = int(result['total_pages'])
     if total_pages > 1 and page < total_pages:
         addDirectoryItem(ph, plugin.url_for(plugin_recent, page=page+1), xbmcgui.ListItem(get_string(30203)), True)
+    endOfDirectory(ph)
+
+@plugin.route('/upcoming/<page>')
+def plugin_upcoming(page):
+
+    page = int(page)
+    channels = load_channel_subs()
+    channel_ids = []
+
+    for( name, claim_id ) in channels:
+        channel_ids.append(claim_id)
+
+    query = {
+        'page': page,
+        'page_size': items_per_page,
+        'claim_type':['stream'],
+        'has_no_source': True,
+        'any_tags': ['c:scheduled-livestream'],
+        'order_by': ['^release_time'],
+        'channel_ids': channel_ids,
+        'not_tags': ['c:scheduled:hide'],
+        'release_time': ['>' + str( int(time.time()) - 600 )],
+        'remove_duplicates': True
+    }
+
+    result = call_rpc('claim_search', query)
+
+    items = []
+    if result['items']:
+        for item in result['items']:
+            item_details = item.get( 'value', False )
+            if item_details:
+                line_item = xbmcgui.ListItem( item_details['title'] )
+
+                thumbnails = thumbnails_get(item_details)
+
+                line_item.setArt({
+                    'thumb': thumbnails[ 'thumbnail' ],
+                    'poster': thumbnails[ 'thumbnail' ],
+                    'fanart': thumbnails[ 'cover' ],
+                })
+
+                items.append((plugin.url_for(plugin_upcoming, page=page), line_item, True))
+
+    addDirectoryItems(ph, items, result['page_size'])
+    total_pages = int(result['total_pages'])
+    if total_pages > 1 and page < total_pages:
+        addDirectoryItem(ph, plugin.url_for(plugin_recent, page=page+1), xbmcgui.ListItem(get_string(30203)), True)
+    endOfDirectory(ph)
+
     endOfDirectory(ph)
 
 @plugin.route('/livestreams')
