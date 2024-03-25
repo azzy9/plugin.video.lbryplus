@@ -17,6 +17,7 @@ from resources.lib.comments import CommentWindow, using_lbry_proxy
 ADDON = xbmcaddon.Addon()
 
 ODYSEE_ENABLED = ADDON.getSetting( 'odysee_enable' ) == 'true'
+ODYSEE_UPCOMING_ENABLED = ADDON.getSetting( 'upcoming_enabled' ) == 'true'
 
 if ODYSEE_ENABLED:
     from resources.lib.external import *
@@ -271,7 +272,7 @@ def select_user_channel():
 def lbry_root():
 
     addDirectoryItem(ph, plugin.url_for(plugin_recent, page=1), xbmcgui.ListItem(get_string(30218)), True)
-    if ODYSEE_ENABLED:
+    if ODYSEE_ENABLED and ODYSEE_UPCOMING_ENABLED:
         addDirectoryItem(ph, plugin.url_for(plugin_upcoming, page=1), xbmcgui.ListItem('Upcoming'), True)
     addDirectoryItem(ph, plugin.url_for(plugin_follows), xbmcgui.ListItem(get_string(30200)), True)
     if ODYSEE_ENABLED:
