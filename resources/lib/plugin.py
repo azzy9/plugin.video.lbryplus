@@ -420,7 +420,7 @@ def plugin_recent(page):
         query['stream_types'] = ['video']
 
     if ODYSEE_ENABLED:
-        query['not_tags'] = ['c:scheduled-livestream','c:scheduled:hide']
+        query['not_tags'] = ['c:scheduled-livestream','c:scheduled:hide','c:scheduled:show']
 
     result = call_rpc('claim_search', query)
     items = result_to_itemlist(result['items'])
@@ -444,8 +444,7 @@ def plugin_upcoming(page):
         'page': page,
         'page_size': items_per_page,
         'claim_type':['stream'],
-        'has_no_source': True,
-        'any_tags': ['c:scheduled-livestream'],
+        'any_tags': ['c:scheduled-livestream','c:scheduled:show'],
         'order_by': ['^release_time'],
         'channel_ids': channel_ids,
         'not_tags': ['c:scheduled:hide'],
