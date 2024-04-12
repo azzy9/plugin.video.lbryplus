@@ -551,6 +551,8 @@ def lbry_channel(uri,page):
     query = {'page': page, 'page_size': items_per_page, 'order_by': 'release_time', 'channel': uri}
     if not ADDON.getSettingBool('server_filter_disable'):
         query['stream_types'] = ['video']
+    if ODYSEE_ENABLED:
+        query['not_tags'] = ['c:scheduled-livestream','c:scheduled:hide','c:scheduled:show']
     result = call_rpc('claim_search', query)
     items = result_to_itemlist(result['items'], channel=uri)
     addDirectoryItems(ph, items, result['page_size'])
