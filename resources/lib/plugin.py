@@ -413,14 +413,13 @@ def plugin_recent(page):
         'page': page,
         'page_size': items_per_page,
         'order_by': 'release_time',
-        'channel_ids': channel_ids
+        'channel_ids': channel_ids,
+        'has_source': 'true',
+        'claim_type': ['stream','repost','channel']
     }
 
     if not ADDON.getSettingBool('server_filter_disable'):
         query['stream_types'] = ['video']
-
-    if ODYSEE_ENABLED:
-        query['not_tags'] = ['c:scheduled-livestream','c:scheduled:hide','c:scheduled:show']
 
     result = call_rpc('claim_search', query)
     items = result_to_itemlist(result['items'])
@@ -444,10 +443,10 @@ def plugin_upcoming(page):
         'page': page,
         'page_size': items_per_page,
         'claim_type':['stream'],
-        'any_tags': ['c:scheduled-livestream','c:scheduled:show'],
+        'any_tags': ['c:scheduled:show'],
         'order_by': ['^release_time'],
+        'has_source': 'true',
         'channel_ids': channel_ids,
-        'not_tags': ['c:scheduled:hide'],
         'release_time': ['>' + str( int(time.time()) - 600 )],
         'remove_duplicates': True
     }
@@ -548,11 +547,16 @@ def lbry_channel_landing(uri):
 def lbry_channel(uri,page):
     uri = deserialize_uri(uri)
     page = int(page)
-    query = {'page': page, 'page_size': items_per_page, 'order_by': 'release_time', 'channel': uri}
+    query = {
+        'page': page,
+        'page_size': items_per_page,
+        'order_by': 'release_time',
+        'channel': uri,
+        'has_source': 'true',
+        'claim_type': ['stream','repost','channel']
+    }
     if not ADDON.getSettingBool('server_filter_disable'):
         query['stream_types'] = ['video']
-    if ODYSEE_ENABLED:
-        query['not_tags'] = ['c:scheduled-livestream','c:scheduled:hide','c:scheduled:show']
     result = call_rpc('claim_search', query)
     items = result_to_itemlist(result['items'], channel=uri)
     addDirectoryItems(ph, items, result['page_size'])
