@@ -105,9 +105,9 @@ def request_get( url, data=None, extra_headers=None, return_json=True ):
 
         # make request
         if data:
-            response = reqs.post(url, data=data, headers=my_headers, verify=False, timeout=10)
+            response = reqs.post(url, data=data, headers=my_headers, timeout=10)
         else:
-            response = reqs.get(url, headers=my_headers, verify=False, timeout=10)
+            response = reqs.get(url, headers=my_headers, timeout=10)
 
         if return_json:
             return response.json()
