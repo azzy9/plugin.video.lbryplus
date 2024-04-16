@@ -443,9 +443,9 @@ def plugin_upcoming(page):
         'page': page,
         'page_size': items_per_page,
         'claim_type':['stream'],
-        'any_tags': ['c:scheduled:show'],
+        'any_tags': ['c:scheduled-livestream'],
         'order_by': ['^release_time'],
-        'has_source': 'true',
+        'has_source': True,
         'channel_ids': channel_ids,
         'release_time': ['>' + str( int(time.time()) - 600 )],
         'remove_duplicates': True
