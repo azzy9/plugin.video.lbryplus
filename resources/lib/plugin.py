@@ -445,7 +445,7 @@ def plugin_upcoming(page):
         'claim_type':['stream'],
         'any_tags': ['c:scheduled-livestream'],
         'order_by': ['^release_time'],
-        'has_source': True,
+        'has_no_source': True,
         'channel_ids': channel_ids,
         'release_time': ['>' + str( int(time.time()) - 600 )],
         'remove_duplicates': True
@@ -458,8 +458,22 @@ def plugin_upcoming(page):
         for item in result['items']:
             item_details = item.get( 'value', False )
             if item_details:
-                line_item = xbmcgui.ListItem( item_details['title'] )
+                line_item_title = item_details.get('title', '')
+                info_labels = {}
+                # adds information context menu
+                info_labels['mediatype'] = 'tvshow'
 
+                if 'description' in item_details:
+                    info_labels['plot'] = item_details['description']
+                if 'release_time' in item_details:
+                    timestamp = time.localtime(int(item_details['release_time']))
+                    info_labels['year'] = timestamp.tm_year
+                    info_labels['premiered'] = time.strftime('%Y-%m-%d',timestamp)
+
+                    line_item_title += "\nLive at " + time.strftime('%Y-%m-%d %H:%M',timestamp)
+
+                line_item = xbmcgui.ListItem( line_item_title )
+                item_set_info( line_item, info_labels )
                 thumbnails = thumbnails_get(item_details)
 
                 line_item.setArt({
@@ -467,7 +481,6 @@ def plugin_upcoming(page):
                     'poster': thumbnails[ 'thumbnail' ],
                     'fanart': thumbnails[ 'cover' ],
                 })
-
                 items.append((plugin.url_for(plugin_upcoming, page=page), line_item, True))
 
     addDirectoryItems(ph, items, result['page_size'])
