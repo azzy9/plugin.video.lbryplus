@@ -451,7 +451,15 @@ def plugin_upcoming(page):
         'remove_duplicates': True
     }
 
+    # get upcoming livestream
     result = call_rpc('claim_search', query)
+
+    query.pop('has_no_source')
+    query[ 'any_tags' ] = ['c:scheduled:show']
+    query[ 'has_source' ] = True
+
+    # get scheduled videos
+    result.update( call_rpc('claim_search', query) )
 
     items = []
     if result['items']:
