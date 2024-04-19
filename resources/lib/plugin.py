@@ -454,6 +454,8 @@ def plugin_upcoming(page):
     # get upcoming livestream
     result = call_rpc('claim_search', query)
 
+    # sleep to stop getting errors
+    xbmc.sleep(1000)
     query.pop('has_no_source')
     query[ 'any_tags' ] = ['c:scheduled:show']
     query[ 'has_source' ] = True
