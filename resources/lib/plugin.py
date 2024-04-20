@@ -461,7 +461,11 @@ def plugin_upcoming(page):
     query[ 'has_source' ] = True
 
     # get scheduled videos
-    result.update( call_rpc('claim_search', query) )
+    result2 = call_rpc('claim_search', query)
+
+    if result2['items']:
+        for item in result2['items']:
+            result['items'].append(item)
 
     items = []
     if result['items']:
