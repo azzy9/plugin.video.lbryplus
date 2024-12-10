@@ -11,6 +11,8 @@
     <setting label="30245" type="action" action="RunPlugin(plugin://plugin.video.lbryplus/clear_user_channel)"/>
     <setting type="lsep" label="30003"/>
     <setting id="server_filter_disable" type="bool" label="30004" default="false"/>
+    <setting type="lsep" label="Images"/>
+    <setting id="image_optimise" type="text" option="urlencoded" label="Image Optimise Service" default="https://thumbnails.odycdn.com/optimize/s:0:0/quality:100/plain/"/>
   </category>
   <category label="30006">
     <setting id="odysee_enable" type="bool" label="30007" default="false"/>

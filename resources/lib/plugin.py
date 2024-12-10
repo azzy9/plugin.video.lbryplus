@@ -48,6 +48,14 @@ def thumbnails_get(item):
     thumbnail_url = item.get('value', {}).get('thumbnail',{}).get('url', '')
     cover_url = item.get('value', {}).get('cover',{}).get('url', thumbnail_url)
 
+    IMAGE_OPTIMISE_SERVICE = ADDON.getSetting( 'image_optimise' )
+    if IMAGE_OPTIMISE_SERVICE:
+
+        IMAGE_OPTIMISE_SERVICE = unquote_plus( IMAGE_OPTIMISE_SERVICE )
+
+        thumbnail_url = IMAGE_OPTIMISE_SERVICE + quote_plus( thumbnail_url )
+        cover_url = IMAGE_OPTIMISE_SERVICE + quote_plus( cover_url )
+
     #thumbnail_url = 'https://' + thumbnail_url.rsplit('https://', 1)[-1] or thumbnail_url
     #cover_url = 'https://' + cover_url.rsplit('https://', 1)[-1] or cover_url
 
