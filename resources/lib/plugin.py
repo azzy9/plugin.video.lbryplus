@@ -41,11 +41,11 @@ ph = plugin.handle
 setContent(ph, 'videos')
 dialog = xbmcgui.Dialog()
 
-def thumbnails_get(item):
+def thumbnails_get( item, fallback = '' ):
 
     """ gets and sanitises thumbnails """
 
-    thumbnail_url = item.get('value', {}).get('thumbnail',{}).get('url', '')
+    thumbnail_url = item.get('value', {}).get('thumbnail',{}).get('url', fallback)
     cover_url = item.get('value', {}).get('cover',{}).get('url', thumbnail_url)
 
     IMAGE_OPTIMISE_SERVICE = ADDON.getSetting( 'image_optimise' )
@@ -412,11 +412,11 @@ def plugin_recent(page):
                     if stream['Live']:
                         info = claim_info.get( stream['ActiveClaim']['CanonicalURL'], {} )
                         list_item = xbmcgui.ListItem( '[COLOR red](Live)[/COLOR] ' + info.get('value', {}).get('title', '') + ' (' + str( stream['ViewerCount'] ) + ')' )
-                        thumbnail = info.get( 'value', {} ).get('thumbnail', {}).get('url', stream[ 'ThumbnailURL' ])
+                        thumbnails = thumbnails_get( info, stream[ 'ThumbnailURL' ] )
                         list_item.setArt({
-                            'thumb': thumbnail,
-                            'poster': thumbnail,
-                            'fanart': thumbnail,
+                            'thumb': thumbnails[ 'thumbnail' ],
+                            'poster': thumbnails[ 'thumbnail' ],
+                            'fanart': thumbnails[ 'cover' ],
                         })
                         addDirectoryItem(ph, plugin.url_for(play_livestream, uri=quote(stream['ActiveClaim']['CanonicalURL'], safe='')), list_item)
 
@@ -538,11 +538,11 @@ def plugin_livestreams():
         for stream in livestreams:
             info = claim_info.get( stream['ActiveClaim']['CanonicalURL'], {} )
             list_item = xbmcgui.ListItem( info.get('value', {}).get('title', '') + ' (' + str( stream['ViewerCount'] ) + ')' )
-            thumbnail = info.get( 'value', {} ).get('thumbnail', {}).get('url', stream[ 'ThumbnailURL' ])
+            thumbnails = thumbnails_get( info, stream[ 'ThumbnailURL' ] )
             list_item.setArt({
-                'thumb': thumbnail,
-                'poster': thumbnail,
-                'fanart': thumbnail,
+                'thumb': thumbnails[ 'thumbnail' ],
+                'poster': thumbnails[ 'thumbnail' ],
+                'fanart': thumbnails[ 'cover' ],
             })
             addDirectoryItem(ph, plugin.url_for(play_livestream, uri=quote(stream['ActiveClaim']['CanonicalURL'], safe='')), list_item)
     endOfDirectory(ph)
@@ -754,11 +754,11 @@ def play_livestream(uri):
             stream_url = stream_url.replace('https://', 'http://', 1) + get_stream_headers()
 
         list_item = xbmcgui.ListItem( info.get('value', {}).get('title', '') )
-        thumbnail = info.get( 'value', {} ).get('thumbnail', {}).get('url', stream[ 'ThumbnailURL' ])
+        thumbnails = thumbnails_get( info, stream[ 'ThumbnailURL' ] )
         list_item.setArt({
-            'thumb': thumbnail,
-            'poster': thumbnail,
-            'fanart': thumbnail,
+            'thumb': thumbnails[ 'thumbnail' ],
+            'poster': thumbnails[ 'thumbnail' ],
+            'fanart': thumbnails[ 'cover' ],
         })
 
         if '.m3u8' in stream_url:
