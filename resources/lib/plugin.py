@@ -53,8 +53,11 @@ def thumbnails_get(item):
 
         IMAGE_OPTIMISE_SERVICE = unquote_plus( IMAGE_OPTIMISE_SERVICE )
 
-        thumbnail_url = IMAGE_OPTIMISE_SERVICE + quote_plus( thumbnail_url )
-        cover_url = IMAGE_OPTIMISE_SERVICE + quote_plus( cover_url )
+        if thumbnail_url:
+            thumbnail_url = IMAGE_OPTIMISE_SERVICE + quote_plus( thumbnail_url )
+
+        if cover_url:
+            cover_url = IMAGE_OPTIMISE_SERVICE + quote_plus( cover_url )
 
     #thumbnail_url = 'https://' + thumbnail_url.rsplit('https://', 1)[-1] or thumbnail_url
     #cover_url = 'https://' + cover_url.rsplit('https://', 1)[-1] or cover_url
@@ -478,9 +481,16 @@ def plugin_upcoming(page):
     items = []
     if result['items']:
         for item in result['items']:
+            
             item_details = item.get( 'value', False )
             if item_details:
-                line_item_title = item_details.get('title', '')
+
+                line_item_title = ''
+                channel = item.get( 'signing_channel', {} ).get( 'value', {} ).get( 'title', False )
+                if channel:
+                    line_item_title += '[COLOR gold]' + channel + "[/COLOR]: "
+                line_item_title += item_details.get('title', '')
+
                 info_labels = {}
                 # adds information context menu
                 info_labels['mediatype'] = 'tvshow'
@@ -496,7 +506,7 @@ def plugin_upcoming(page):
 
                 line_item = xbmcgui.ListItem( line_item_title )
                 item_set_info( line_item, info_labels )
-                thumbnails = thumbnails_get(item_details)
+                thumbnails = thumbnails_get( item )
 
                 line_item.setArt({
                     'thumb': thumbnails[ 'thumbnail' ],
