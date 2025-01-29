@@ -103,7 +103,9 @@ class Odysee:
             'auth_token': self.auth_token,
         }
         result = request_get( self.API_URL + '/user/me', data=data )
-        return result and result[ 'success' ]
+        if result and result[ 'success' ]:
+            return result[ 'data' ]
+        return False
 
     def subscription_new( self, channel_name, claim_id ):
 

@@ -823,18 +823,25 @@ def login_test():
 
             ODYSEE.ensure_device_id()
 
-            if not ODYSEE.user_exists( ODYSEE.email ):
-                response_str = 'User does not exist?'
+            # check and test current login
+            if ODYSEE.auth_token and ODYSEE.signed_in and ODYSEE.user_me():
+                response_str = 'Valid login already detected'
             else:
-                if ODYSEE.user_new() == '':
-                    response_str = 'Unable to get auth token from Odysee'
+
+                xbmc.sleep( 1000 )
+
+                if not ODYSEE.user_exists( ODYSEE.email ):
+                    response_str = 'User does not exist?'
                 else:
-                    if not ODYSEE.user_signin():
-                        response_str = 'Login Failed - Incorrect details?'
+                    if ODYSEE.user_new() == '':
+                        response_str = 'Unable to get auth token from Odysee'
                     else:
-                        response_str = 'Login Successful - Session has been set'
-                        ODYSEE.signed_in = 'True'
-                        ADDON.setSetting( 'signed_in', ODYSEE.signed_in )
+                        if not ODYSEE.user_signin():
+                            response_str = 'Login Failed - Incorrect details?'
+                        else:
+                            response_str = 'Login Successful - Session has been set'
+                            ODYSEE.signed_in = 'True'
+                            ADDON.setSetting( 'signed_in', ODYSEE.signed_in )
 
         else:
             response_str = 'No details detected - please save login details first before running'
