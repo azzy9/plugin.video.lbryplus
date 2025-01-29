@@ -149,6 +149,36 @@ class Odysee:
                 return result[ 'data' ]
         return False
 
+    def sync_get( self, hash ):
+
+        """ Gets sync hash details for LBRY """
+
+        if hash:
+            data = {
+                'auth_token': self.auth_token,
+                'hash': hash,
+            }
+            result = request_get( self.API_URL + '/sync/get', data=data )
+            if result and result[ 'success' ]:
+                return result[ 'data' ]
+        return False
+
+    def sync_set( self, old_hash, new_hash, lbry_data ):
+
+        """ Sets sync hash and data details for LBRY """
+
+        if old_hash and new_hash and lbry_data:
+            data = {
+                'auth_token': self.auth_token,
+                'old_hash': old_hash,
+                'new_hash': new_hash,
+                'data': lbry_data,
+            }
+            result = request_get( self.API_URL + '/sync/set', data=data )
+            if result and result[ 'success' ]:
+                return result[ 'data' ]
+        return False
+
     def notification_list( self ):
 
         """ Gets list of notifications """
