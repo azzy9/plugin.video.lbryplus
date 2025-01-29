@@ -90,8 +90,8 @@ def request_get( url, data=None, extra_headers=None, return_json=True ):
         # headers
         my_headers = {
             'Accept-Language': 'en-gb,en;q=0.5',
-            'User-Agent': 'Mozilla/5.0 (Windows NT 10.0; Win64; x64) AppleWebKit/537.36 (KHTML, like Gecko) Chrome/123.0.0.0 Safari/537.36',
-            'Accept': 'a*/*',
+            'User-Agent': 'Mozilla/5.0 (Windows NT 10.0; Win64; x64) AppleWebKit/537.36 (KHTML, like Gecko) Chrome/132.0.0.0 Safari/537.36',
+            'Accept': '*/*',
             'Content-type': 'application/x-www-form-urlencoded',
             'Referer': url,
             'Cache-Control': 'no-cache',
