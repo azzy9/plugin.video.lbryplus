@@ -37,7 +37,7 @@ def get_stream_headers():
 
 def get_preferences():
 
-    """ method to get preferences from Odysee """
+    """ method to get preferences from LBRY used by Odysee """
 
     preferences = {}
 
@@ -48,6 +48,22 @@ def get_preferences():
         )
 
     return preferences
+
+def set_preferences( preferences ):
+
+    """ method to set preferences to LBRY used by Odysee """
+
+    preference_set = False
+
+    if ODYSEE.has_login_details() and ODYSEE.signed_in:
+
+        preference_set = call_rpc(
+            'preference_set',
+            {'key':'shared', 'value': preferences },
+            additional_headers=get_additional_header()
+        )
+
+    return preference_set
 
 def load_channel_subs():
 
@@ -78,6 +94,8 @@ def add_channel_sub(uri):
 
     ODYSEE.subscription_new(channel_name, claim_id)
 
+    odysee_sync()
+
 def remove_channel_sub(uri):
 
     """ removes an Odysee subscription """
@@ -86,6 +104,62 @@ def remove_channel_sub(uri):
     claim_id = uri.split('#')[1]
 
     ODYSEE.subscription_delete(claim_id)
+
+    preferences = get_preferences()
+
+    subscriptions = preferences.get( 'shared', {} ).get( 'value', {} )\
+        .get( 'subscriptions', False )
+
+    if subscriptions:
+
+        for sub in subscriptions:
+            if uri in sub:
+                subscriptions.remove( sub )
+                break
+
+        preferences[ 'shared' ][ 'value' ][ 'subscriptions' ] = subscriptions
+
+        set_preferences( preferences[ 'shared' ] )
+
+        odysee_sync()
+
+def odysee_sync():
+
+    """ syncs LBRY data with Odysee """
+
+    sync_hash = call_rpc(
+        'sync_hash', {}, additional_headers=get_additional_header()
+    )
+
+    if sync_hash:
+
+        sync_get = ODYSEE.sync_get( sync_hash )
+
+        if sync_get and sync_get.get( 'changed', False ):
+
+            sync_apply = call_rpc(
+                'sync_apply',
+                {
+                    'blocking': True,
+                    'data': sync_get.get( 'data', '' ),
+                    'password': '',
+                },
+                additional_headers=get_additional_header()
+            )
+
+            if sync_apply:
+
+                sync_set = ODYSEE.sync_set(
+                    sync_get.get( 'hash', '' ),
+                    sync_apply.get( 'hash', '' ),
+                    sync_apply.get( 'data', '' ),
+                )
+
+                if sync_set:
+                    return True
+    
+    return False
+
 
 def load_playlist( name ):
 
@@ -112,7 +186,7 @@ def save_playlist( name, items ):
 
     preferences = get_preferences()
 
-    playlist = get_preferences().get( 'shared', {} ).get( 'value', {} )\
+    playlist = preferences.get( 'shared', {} ).get( 'value', {} )\
         .get( 'builtinCollections', {} ).get( 'watchlater', False )
 
     # make sure playlist exists first
@@ -121,14 +195,7 @@ def save_playlist( name, items ):
         preferences[ 'shared' ][ 'value' ][ 'builtinCollections' ][ 'watchlater' ][ 'itemCount' ] = len( items )
         preferences[ 'shared' ][ 'value' ][ 'builtinCollections' ][ 'watchlater' ][ 'items' ] = items
 
-        if ODYSEE.has_login_details() and ODYSEE.signed_in:
-
-            preference_set = call_rpc(
-                'preference_set',
-                {'key':'shared', 'value': preferences[ 'shared' ] },
-                additional_headers=get_additional_header()
-            )
-
+        set_preferences( preferences[ 'shared' ] )
 
 def get_wallet_address():
 
