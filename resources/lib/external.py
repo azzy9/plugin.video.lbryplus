@@ -94,7 +94,21 @@ def add_channel_sub(uri):
 
     ODYSEE.subscription_new(channel_name, claim_id)
 
-    odysee_sync()
+    preferences = get_preferences()
+
+    subscriptions = preferences.get( 'shared', {} ).get( 'value', {} )\
+        .get( 'subscriptions', False )
+
+    if subscriptions:
+
+        subscriptions.append( 'lbry://' + uri )
+        subscriptions.sort()
+
+        preferences[ 'shared' ][ 'value' ][ 'subscriptions' ] = subscriptions
+
+        set_preferences( preferences[ 'shared' ] )
+
+        odysee_sync()
 
 def remove_channel_sub(uri):
 
