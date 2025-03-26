@@ -12,7 +12,7 @@ import time
 from six.moves.urllib.parse import quote, unquote, quote_plus, unquote_plus
 
 from resources.lib.exception import PluginException
-from resources.lib.comments import CommentWindow, using_lbry_proxy
+from resources.lib.comments import CommentWindow, IS_LBRY_PROXY
 
 ADDON = xbmcaddon.Addon()
 
@@ -234,7 +234,7 @@ def select_user_channel():
 
         try:
             params = {'page' : page}
-            result = call_rpc('channel_list', params, errdialog=not using_lbry_proxy)
+            result = call_rpc(get_api_url(), 'channel_list', params, errdialog=not IS_LBRY_PROXY)
             total_pages = max(result['total_pages'], 1) # Total pages returns 0 if empty
             if 'items' in result:
                 items += result['items']
@@ -315,7 +315,7 @@ def lbry_root():
 def plugin_playlist(name):
     name = unquote_plus(name)
     uris = load_playlist(name)
-    claim_info = call_rpc('resolve', {'urls': uris})
+    claim_info = call_rpc(get_api_url(), 'resolve', {'urls': uris})
     items = []
     for uri in uris:
         items.append(claim_info[uri])
@@ -351,7 +351,7 @@ def plugin_follows():
     resolve_uris = []
     for (name,claim_id) in channels:
         resolve_uris.append(name+'#'+claim_id)
-    channel_infos = call_rpc('resolve', {'urls': resolve_uris})
+    channel_infos = call_rpc(get_api_url(), 'resolve', {'urls': resolve_uris})
 
     for (name,claim_id) in channels:
         uri = name+'#'+claim_id
@@ -406,7 +406,7 @@ def plugin_recent(page):
                 for stream in livestreams:
                     if stream['ActiveClaim']['CanonicalURL']:
                         urls.append(stream['ActiveClaim']['CanonicalURL'])
-                claim_info = call_rpc('resolve', {'urls': urls})
+                claim_info = call_rpc(get_api_url(), 'resolve', {'urls': urls})
 
                 for stream in livestreams:
                     if stream['Live']:
@@ -432,7 +432,7 @@ def plugin_recent(page):
     if not ADDON.getSettingBool('server_filter_disable'):
         query['stream_types'] = ['video']
 
-    result = call_rpc('claim_search', query)
+    result = call_rpc(get_api_url(), 'claim_search', query)
     items = result_to_itemlist(result['items'])
     addDirectoryItems(ph, items, result['page_size'])
     total_pages = int(result['total_pages'])
@@ -463,7 +463,7 @@ def plugin_upcoming(page):
     }
 
     # get upcoming livestream
-    result = call_rpc('claim_search', query)
+    result = call_rpc(get_api_url(), 'claim_search', query)
 
     # sleep to stop getting errors
     xbmc.sleep(1000)
@@ -472,7 +472,7 @@ def plugin_upcoming(page):
     query[ 'has_source' ] = True
 
     # get scheduled videos
-    result2 = call_rpc('claim_search', query)
+    result2 = call_rpc(get_api_url(), 'claim_search', query)
 
     if result2['items']:
         for item in result2['items']:
@@ -533,7 +533,7 @@ def plugin_livestreams():
         for stream in livestreams:
             if stream['ActiveClaim']['CanonicalURL']:
                 urls.append(stream['ActiveClaim']['CanonicalURL'])
-        claim_info = call_rpc('resolve', {'urls': urls})
+        claim_info = call_rpc(get_api_url(), 'resolve', {'urls': urls})
 
         for stream in livestreams:
             info = claim_info.get( stream['ActiveClaim']['CanonicalURL'], {} )
@@ -550,16 +550,11 @@ def plugin_livestreams():
 @plugin.route('/comments/show/<uri>')
 def plugin_comment_show(uri):
     params = deserialize_uri(uri).split('#')
-    win = CommentWindow(
-        'addon-lbry-comments.xml',
-        xbmcaddon.Addon().getAddonInfo('path'),
-        'Default',
+    CommentWindow(
         channel_name=params[0],
         channel_id=params[1],
         claim_id=params[2]
     )
-    win.doModal()
-    del win
 
 @plugin.route('/follows/add/<uri>')
 def plugin_follow(uri):
@@ -576,7 +571,7 @@ def lbry_new(page):
     query = {'page': page, 'page_size': items_per_page, 'order_by': 'release_time'}
     if not ADDON.getSettingBool('server_filter_disable'):
         query['stream_types'] = ['video']
-    result = call_rpc('claim_search', query)
+    result = call_rpc(get_api_url(), 'claim_search', query)
     items = result_to_itemlist(result['items'])
     addDirectoryItems(ph, items, result['page_size'])
     total_pages = int(result['total_pages'])
@@ -602,7 +597,7 @@ def lbry_channel(uri,page):
     }
     if not ADDON.getSettingBool('server_filter_disable'):
         query['stream_types'] = ['video']
-    result = call_rpc('claim_search', query)
+    result = call_rpc(get_api_url(), 'claim_search', query)
     items = result_to_itemlist(result['items'], channel=uri)
     addDirectoryItems(ph, items, result['page_size'])
     total_pages = int(result['total_pages'])
@@ -629,7 +624,7 @@ def lbry_search_pager(query, page):
         #always times out on server :(
         #if not ADDON.getSettingBool('server_filter_disable'):
         #    params['stream_types'] = ['video']
-        result = call_rpc('claim_search', params)
+        result = call_rpc(get_api_url(), 'claim_search', params)
         items = result_to_itemlist(result['items'])
         addDirectoryItems(ph, items, result['page_size'])
         total_pages = int(result['total_pages'])
@@ -682,11 +677,11 @@ def claim_reward(reward_type, claim_code):
 
 def user_payment_confirmed(claim_info):
     # paid for claim already?
-    purchase_info = call_rpc('purchase_list', {'claim_id': claim_info['claim_id']})
+    purchase_info = call_rpc(get_api_url(), 'purchase_list', {'claim_id': claim_info['claim_id']})
     if len(purchase_info['items']) > 0:
         return True
 
-    account_list = call_rpc('account_list')
+    account_list = call_rpc(get_api_url(), 'account_list')
     for account in account_list['items']:
         if account['is_default']:
             balance = float(str(account['satoshis'])[:-6]) / float(100)
@@ -701,7 +696,7 @@ def claim_play(uri):
 
     uri = deserialize_uri(uri)
 
-    claim_info = call_rpc('resolve', {'urls': uri})[uri]
+    claim_info = call_rpc(get_api_url(), 'resolve', {'urls': uri})[uri]
     if 'error' in claim_info:
         dialog.notification(get_string(30102), claim_info['error']['name'], xbmcgui.NOTIFICATION_ERROR)
         return
@@ -722,7 +717,7 @@ def claim_play(uri):
             claim_info['claim_id']
         )
 
-    result = call_rpc('get', {'uri': uri, 'save_file': False})
+    result = call_rpc(get_api_url(), 'get', {'uri': uri, 'save_file': False})
     stream_url = result['streaming_url'].replace('0.0.0.0','127.0.0.1')
 
     # Use HTTP
@@ -742,7 +737,7 @@ def play_livestream(uri):
 
     if canonical_url:
 
-        claim_info = call_rpc('resolve', {'urls': [canonical_url]})
+        claim_info = call_rpc(get_api_url(), 'resolve', {'urls': [canonical_url]})
         info = claim_info.get( canonical_url, {} )
 
         stream = ODYSEE.livestream_is_live( info[ 'signing_channel' ][ 'claim_id' ] )
@@ -770,7 +765,7 @@ def play_livestream(uri):
 def claim_download(uri):
     uri = deserialize_uri(uri)
 
-    claim_info = call_rpc('resolve', {'urls': uri})[uri]
+    claim_info = call_rpc(get_api_url(), 'resolve', {'urls': uri})[uri]
     if 'error' in claim_info:
         dialog.notification(get_string(30102), claim_info['error']['name'], xbmcgui.NOTIFICATION_ERROR)
         return
@@ -783,7 +778,7 @@ def claim_download(uri):
         if not user_payment_confirmed(claim_info):
             return
 
-    call_rpc('get', {'uri': uri, 'save_file': True})
+    call_rpc(get_api_url(), 'get', {'uri': uri, 'save_file': True})
 
 @plugin.route('/settings')
 def settings():

@@ -1,70 +1,13 @@
-import xbmc
 import xbmcgui
-
-import requests
 
 from resources.lib.general import *
 from resources.lib.exception import *
 
-odysee_comment_api_url = 'https://comments.odysee.com/api/v2'
-using_lbry_proxy = get_api_url().find('api.lbry.tv') != -1
+IS_LBRY_PROXY = ( 'api.na-backend.odysee.com' in get_api_url() )
 
-def call_comment_rpc(method, params={}, errdialog=True):
-    try:
-        xbmc.log('call_comment_rpc: url=' + odysee_comment_api_url \
-            + ', method=' + method + ', params=' + str(params))
+class CommentWindowXML(xbmcgui.WindowXML):
 
-        headers = {'content-type' : 'application/json'}
-        json_data = { 'jsonrpc' : '2.0', 'id' : 1, 'method': method, 'params': params }
-        result = requests.post(odysee_comment_api_url, headers=headers, json=json_data)
-        result.raise_for_status()
-        rjson = result.json()
-        if 'error' in rjson:
-            raise PluginException(rjson['error']['message'])
-        return result.json()['result']
-    except requests.exceptions.ConnectionError as err:
-        if errdialog:
-            dialog.notification(get_string(30105), get_string(30108), xbmcgui.NOTIFICATION_ERROR)
-        raise PluginException(err)
-    except requests.exceptions.HTTPError as err:
-        if errdialog:
-            dialog.notification(get_string(30101), str(err), xbmcgui.NOTIFICATION_ERROR)
-        raise PluginException(err)
-    except PluginException as err:
-        if errdialog:
-            dialog.notification(get_string(30107), str(err), xbmcgui.NOTIFICATION_ERROR)
-        raise err
-    except Exception as err:
-        xbmc.log('call_comment_rpc exception:' + str(err))
-        raise err
-
-def get_user_channel():
-    user_channel_str = ADDON.getSettingString('user_channel')
-    if user_channel_str:
-        toks = user_channel_str.split('#')
-        if len(toks) == 2:
-            return (toks[0], toks[1])
-    return None
-
-def sign(data):
-
-    """ Sign data if a user channel is selected """
-
-    user_channel = get_user_channel()
-    if not user_channel:
-        return None
-
-    # assume data type is str
-    if type(data) is not str:
-        raise Exception('attempt to sign non-str type')
-
-    bdata = bytes(data, 'utf-8')
-
-    toHex = lambda x : "".join([format(c,'02x') for c in x])
-
-    return call_rpc('channel_sign', params={'channel_id': user_channel[1], 'hexdata': toHex(bdata)})
-
-class CommentWindow(xbmcgui.WindowXML):
+    COMMENT_API_URL = 'https://comments.odysee.com/api/v2'
 
     def __init__(self, *args, **kwargs):
         self.channel_name = kwargs['channel_name']
@@ -76,25 +19,35 @@ class CommentWindow(xbmcgui.WindowXML):
     def onInit(self):
         self.refresh()
 
+    def get_user_channel(self):
+        user_channel_str = ADDON.getSettingString('user_channel')
+        if user_channel_str:
+            toks = user_channel_str.split('#')
+            if len(toks) == 2:
+                return (toks[0], toks[1])
+        return None
+
     def onAction(self, action):
+
         if action == xbmcgui.ACTION_CONTEXT_MENU:
             # Commenting is not supported
-            if using_lbry_proxy:
+            if IS_LBRY_PROXY:
                 ret = dialog.contextmenu([get_string(30240)]) # Only allow refreshing
                 if ret == 0:
                     self.refresh()
                 return
 
+            user_channel = self.get_user_channel()
+
             # No user channel. Allow user to select an account or refresh.
-            if not get_user_channel():
+            if not user_channel:
                 ret = dialog.contextmenu([get_string(30240)])
                 if ret == 0:
                     self.refresh()
                 return
 
             # User channel selected. Allow comment manipulation.
-            user_channel = get_user_channel()
-            if get_user_channel():
+            if user_channel:
                 ccl = self.get_comment_control_list()
                 selected_pos = ccl.getSelectedPosition()
                 item = ccl.getSelectedItem()
@@ -131,7 +84,7 @@ class CommentWindow(xbmcgui.WindowXML):
                     offsets.append(offset)
                     offset = offset + 1
 
-                    if item.getProperty('channel_id') == get_user_channel()[1]:
+                    if item.getProperty('channel_id') == self.get_user_channel()[1]:
 
                         menu.append(get_string(30223)) # Edit
                         offsets.append(offset)
@@ -245,16 +198,31 @@ class CommentWindow(xbmcgui.WindowXML):
             self.last_selected_position = ccl.getSelectedPosition()
 
     def fetch_comment_list(self, page):
-        return call_comment_rpc('comment.List', params={"page":page,"page_size":50,'include_replies':True,'visible':False,'hidden':False,'top_level':False,'channel_name':self.channel_name,'channel_id':self.channel_id,'claim_id':self.claim_id,'sort_by':0})
+        return call_rpc(
+            self.COMMENT_API_URL,
+            'comment.List',
+            params={
+                'page': page,
+                'page_size': 50,
+                'include_replies': True,
+                'visible': False,
+                'hidden': False,
+                'top_level': False,
+                'channel_name': self.channel_name,
+                'channel_id': self.channel_id,
+                'claim_id': self.claim_id,
+                'sort_by': 0
+            }
+        )
 
     def fetch_react_list(self, comment_ids):
-        user_channel = get_user_channel()
+        user_channel = self.get_user_channel()
         params = {'comment_ids' : comment_ids }
         if user_channel:
             params['channel_name'] = user_channel[0]
             params['channel_id'] = user_channel[1]
             self.sign(user_channel[0], params)
-        return call_comment_rpc('reaction.List', params=params)
+        return call_rpc(self.COMMENT_API_URL, 'reaction.List', params=params)
 
     def refresh(self):
         self.last_selected_position = -1
@@ -373,6 +341,9 @@ class CommentWindow(xbmcgui.WindowXML):
         return li
 
     def copy_list_item(self, li):
+
+        """ Creates a copy of the line item """
+
         li_copy = xbmcgui.ListItem(label=li.getLabel())
         li_copy.setProperty('id', li.getProperty('id'))
         li_copy.setProperty('channel_name', li.getProperty('channel_name'))
@@ -400,7 +371,7 @@ class CommentWindow(xbmcgui.WindowXML):
         )
 
     def create_label(self, channel_name, channel_id, likes, dislikes, comment, indent, my_vote, selected=False):
-        user_channel = get_user_channel()
+        user_channel = self.get_user_channel()
         if user_channel and user_channel[1] == channel_id:
             color = 'red' if selected else 'green'
             channel_name = '[COLOR ' + color + ']' + channel_name + '[/COLOR]'
@@ -426,40 +397,58 @@ class CommentWindow(xbmcgui.WindowXML):
         return lilabel
 
     def sign(self, data, params):
-        res = sign(data)
+
+        """ Sign data if a user channel is selected """
+
+        user_channel = self.get_user_channel()
+        if not user_channel:
+            return None
+
+        # assume data type is str
+        if type(data) is not str:
+            raise Exception('attempt to sign non-str type')
+
+        bdata = bytes(data, 'utf-8')
+
+        toHex = lambda x : "".join([format(c,'02x') for c in x])
+
+        res =  call_rpc(
+            get_api_url(),
+            'channel_sign',
+            params={'channel_id': user_channel[1], 'hexdata': toHex(bdata)}
+        )
         params['signature'] = res['signature']
         params['signing_ts'] = res['signing_ts']
 
     def create_comment(self, comment, parent_id=None):
-        user_channel = get_user_channel()
+        user_channel = self.get_user_channel()
         progress_dialog = xbmcgui.DialogProgress()
         progress_dialog.create(get_string(30241), get_string(30242))
         params = { 'claim_id' : self.claim_id, 'comment' : comment, 'channel_id' : user_channel[1] }
         if parent_id:
             params['parent_id'] = parent_id
         self.sign(comment, params)
-        res = call_comment_rpc('comment.Create', params)
+        res = call_rpc(self.COMMENT_API_URL, 'comment.Create', params)
         self.like(res['comment_id'])
         progress_dialog.close()
         return res['comment_id']
 
     def edit_comment(self, comment_id, comment):
-        user_channel = get_user_channel()
         params = { 'comment_id' : comment_id, 'comment' : comment }
         self.sign(comment, params)
-        return call_comment_rpc('comment.Edit', params)
+        return call_rpc(self.COMMENT_API_URL, 'comment.Edit', params)
 
     def remove_comment(self, comment_id):
         params = { 'comment_id' : comment_id }
         self.sign(comment_id, params)
-        call_comment_rpc('comment.Abandon', params)
+        call_rpc(self.COMMENT_API_URL, 'comment.Abandon', params)
 
-    def react(self, comment_id, current_vote=0, type=None):
+    def react(self, comment_id, current_vote=0, react_type=None):
         # No vote to clear
-        if current_vote == '0' and type == None:
+        if current_vote == '0' and react_type is None:
             return
 
-        user_channel = get_user_channel()
+        user_channel = self.get_user_channel()
         params = { 'comment_ids' : comment_id,
                 'channel_name' : user_channel[0],
                 'channel_id' : user_channel[1]
@@ -475,13 +464,27 @@ class CommentWindow(xbmcgui.WindowXML):
             params['type'] = 'dislike' if current_vote == '-1' else 'like'
 
         self.sign(user_channel[0], params)
-        call_comment_rpc('reaction.React', params)
+        call_rpc(self.COMMENT_API_URL, 'reaction.React', params)
 
     def like(self, comment_id):
-        self.react(comment_id, type='like')
+        self.react(comment_id, react_type='like')
 
     def dislike(self, comment_id):
-        self.react(comment_id, type='dislike')
+        self.react(comment_id, react_type='dislike')
 
     def neutral(self, comment_id, current_vote):
         self.react(comment_id, current_vote=current_vote)
+
+class CommentWindow:
+
+    def __init__(self, channel_name, channel_id, claim_id):
+        window = CommentWindowXML(
+            'addon-lbry-comments.xml',
+            xbmcaddon.Addon().getAddonInfo('path'),
+            'Default',
+            channel_name=channel_name,
+            channel_id=channel_id,
+            claim_id=claim_id
+        )
+        window.doModal()
+        del window

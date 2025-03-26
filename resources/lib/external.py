@@ -3,8 +3,6 @@ from __future__ import absolute_import
 
 import xbmc
 import xbmcaddon
-import xbmcvfs
-import xbmcgui
 
 import routing
 
@@ -44,7 +42,10 @@ def get_preferences():
     if ODYSEE.has_login_details() and ODYSEE.signed_in:
 
         preferences = call_rpc(
-            'preference_get', {}, additional_headers=get_additional_header()
+            get_api_url(),
+            'preference_get',
+            {},
+            additional_headers=get_additional_header()
         )
 
     return preferences
@@ -58,6 +59,7 @@ def set_preferences( preferences ):
     if ODYSEE.has_login_details() and ODYSEE.signed_in:
 
         preference_set = call_rpc(
+            get_api_url(),
             'preference_set',
             {'key':'shared', 'value': preferences },
             additional_headers=get_additional_header()
@@ -142,7 +144,10 @@ def odysee_sync():
     """ syncs LBRY data with Odysee """
 
     sync_hash = call_rpc(
-        'sync_hash', {}, additional_headers=get_additional_header()
+        get_api_url(),
+        'sync_hash',
+        {},
+        additional_headers=get_additional_header()
     )
 
     if sync_hash:
@@ -152,6 +157,7 @@ def odysee_sync():
         if sync_get and sync_get.get( 'changed', False ):
 
             sync_apply = call_rpc(
+                get_api_url(),
                 'sync_apply',
                 {
                     'blocking': True,
@@ -220,6 +226,7 @@ def get_wallet_address():
     if ODYSEE.has_login_details() and ODYSEE.signed_in:
 
         wallet_address = call_rpc(
+            get_api_url(),
             'address_unused',
             {},
             additional_headers=get_additional_header()
@@ -236,6 +243,7 @@ def get_wallet_balance():
     if ODYSEE.has_login_details() and ODYSEE.signed_in:
 
         wallet_balance = call_rpc(
+            get_api_url(),
             'wallet_balance',
             {},
             additional_headers=get_additional_header()

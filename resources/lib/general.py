@@ -5,8 +5,6 @@ import xbmcaddon
 import xbmcgui
 import xbmcvfs
 
-import time
-
 import requests
 
 import six
@@ -49,17 +47,17 @@ def translate_path(path):
         return xbmc.translatePath( path )
     return xbmcvfs.translatePath( path )
 
-def call_rpc(method, params={}, errdialog=True, additional_headers = None):
+def call_rpc( url, method, params={}, errdialog=True, additional_headers = None ):
 
     """ Makes a RPC Call """
 
     try:
-        xbmc.log('call_rpc: url=' + get_api_url() + ', method=' + method + ', params=' + str(params))
+        xbmc.log('call_rpc: url=' + url + ', method=' + method + ', params=' + str(params))
         headers = {'content-type' : 'application/json'}
         if additional_headers:
             headers.update( additional_headers )
         json_data = { 'jsonrpc' : '2.0', 'id' : 1, 'method': method, 'params': params }
-        result = requests.post(get_api_url(), headers=headers, json=json_data)
+        result = requests.post(url, headers=headers, json=json_data)
         result.raise_for_status()
         rjson = result.json()
         if 'error' in rjson:
