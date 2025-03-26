@@ -746,7 +746,8 @@ def play_livestream(uri):
 
         # Use HTTP
         if ADDON.getSetting('useHTTP') == 'true':
-            stream_url = stream_url.replace('https://', 'http://', 1) + get_stream_headers()
+            stream_url = stream_url.replace('https://', 'http://', 1)
+        stream_url = stream_url + get_stream_headers()
 
         list_item = xbmcgui.ListItem( info.get('value', {}).get('title', '') )
         thumbnails = thumbnails_get( info, stream[ 'ThumbnailURL' ] )
