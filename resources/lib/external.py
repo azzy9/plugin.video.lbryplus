@@ -1,7 +1,6 @@
 # -*- coding: utf-8 -*-
 from __future__ import absolute_import
 
-import xbmc
 import xbmcaddon
 
 import routing
@@ -177,7 +176,7 @@ def odysee_sync():
 
                 if sync_set:
                     return True
-    
+
     return False
 
 
