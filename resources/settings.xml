@@ -25,5 +25,6 @@
   <category label="30011">
     <setting id="useHTTP" label="30012" type="bool" default="false"/>
     <setting id="login_test" label="Test Login Details" type="action" action="RunPlugin(plugin://plugin.video.lbryplus/login/test)"/>
+    <setting id="search_phrase_match" label="Search Phrase Match" type="bool" default="True" />
   </category>
 </settings>

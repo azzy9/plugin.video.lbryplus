@@ -612,9 +612,15 @@ def lbry_search():
 
 @plugin.route('/search/<query>/<page>')
 def lbry_search_pager(query, page):
+
     query = unquote_plus(query)
     page = int(page)
     if query != '':
+
+        # make phrase match
+        if ADDON.getSetting('search_phrase_match') == 'true' and '"' not in query:
+            query = '"' + query + '"'
+
         params = {
             'text': query,
             'page': page,
