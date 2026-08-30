@@ -24,6 +24,7 @@ if ODYSEE_ENABLED:
 else:
     from resources.lib.local import *
 from resources.lib.general import *
+from resources.lib.search_history import *
 
 if get_api_url() == '':
     raise Exception('Lbry API URL is undefined.')
@@ -291,7 +292,7 @@ def lbry_root():
     #addDirectoryItem(ph, plugin.url_for(plugin_playlists), xbmcgui.ListItem(get_string(30210)), True)
     addDirectoryItem(ph, plugin.url_for(plugin_playlist, name=quote_plus(get_string(30211))), xbmcgui.ListItem(get_string(30211)), True)
     #addDirectoryItem(ph, plugin.url_for(lbry_new, page=1), ListItem(get_string(30202)), True)
-    addDirectoryItem(ph, plugin.url_for(lbry_search), xbmcgui.ListItem(get_string(137)), True)
+    addDirectoryItem(ph, plugin.url_for(search_menu), xbmcgui.ListItem(get_string(137)), True)
 
     if ODYSEE_ENABLED:
 
@@ -310,6 +311,16 @@ def lbry_root():
 #def plugin_playlists():
 #    addDirectoryItem(ph, plugin.url_for(plugin_playlist, name=quote_plus(get_string(30211))), xbmcgui.ListItem(get_string(30211)), True)
 #    endOfDirectory(ph)
+
+
+@plugin.route('/search_menu')
+def search_menu():
+
+    """ search menu list """
+
+    addDirectoryItem(ph, plugin.url_for(lbry_search), xbmcgui.ListItem(get_string(137)), True)
+    addDirectoryItem(ph, plugin.url_for(list_search_history), xbmcgui.ListItem(get_string(30201)), True)
+    endOfDirectory(ph)
 
 @plugin.route('/playlist/list/<name>')
 def plugin_playlist(name):
@@ -608,6 +619,9 @@ def lbry_channel(uri,page):
 @plugin.route('/search')
 def lbry_search():
     query = dialog.input(get_string(30209))
+    if query:
+        # add term to search history
+        search_history_add( query )
     lbry_search_pager(quote_plus(query), 1)
 
 @plugin.route('/search/<query>/<page>')
@@ -639,6 +653,30 @@ def lbry_search_pager(query, page):
         endOfDirectory(ph)
     else:
         endOfDirectory(ph, False)
+
+@plugin.route('/list_search_history')
+def list_search_history():
+
+    """ search history list """
+
+    list_data = search_history_load()
+
+    # Make sure there is data to loop
+    if list_data:
+
+        # loop the data
+        for search_item in list_data:
+
+            list_item = xbmcgui.ListItem(search_item)
+            callback_url = plugin.url_for(lbry_search_pager, query=quote_plus(search_item), page=1)
+            addDirectoryItem(
+                handle = ph,
+                url = callback_url,
+                listitem = list_item,
+                isFolder = True
+            )
+
+    endOfDirectory(ph)
 
 @plugin.route('/rewards')
 def show_rewards():

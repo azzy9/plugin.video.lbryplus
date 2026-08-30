@@ -109,7 +109,7 @@ msgid "Followed Channels"
 msgstr ""
 
 msgctxt "#30201"
-msgid "Search"
+msgid "Search History"
 msgstr ""
 
 msgctxt "#30202"
