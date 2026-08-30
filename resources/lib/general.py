@@ -9,7 +9,7 @@ import requests
 
 import six
 
-from six.moves.urllib.parse import quote, unquote, quote_plus, unquote_plus
+from six.moves.urllib.parse import quote, unquote
 
 from resources.lib.exception import *
 
